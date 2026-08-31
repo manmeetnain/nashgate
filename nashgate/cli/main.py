@@ -28,9 +28,18 @@ def main(ctx: typer.Context) -> None:
 
 
 @app.command()
-def route() -> None:
+def route(
+    config: str = typer.Option(..., "--config", "-c", help="Path to gateway config YAML (see docs/example.config.yaml)"),
+    host: str = typer.Option("0.0.0.0", help="Bind host"),
+    port: int = typer.Option(8000, help="Bind port"),
+) -> None:
     """Start the gateway (OpenAI-compatible /v1 API)."""
-    typer.echo("nashgate route: not implemented yet")
+    import uvicorn
+
+    from nashgate.gateway.config import app_from_config
+
+    fastapi_app = app_from_config(config)
+    uvicorn.run(fastapi_app, host=host, port=port)
 
 
 @app.command()

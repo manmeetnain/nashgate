@@ -90,12 +90,47 @@ end-to-end: train against `MultiAgentRoutingEnv` → `policy.save()` →
 `LiveRouter.from_checkpoint()` → `select_backend()` / `report_result()`
 on synthetic live traffic.
 
+## The gateway
+
+`nashgate/gateway/` is the OpenAI-compatible proxy — the thing an
+agent's HTTP client actually points at. `POST /v1/chat/completions`
+with an `X-Nashgate-Caller` header:
+
+```
+caller request
+  → resolve caller from X-Nashgate-Caller (fixed roster, unknown = 400)
+  → router.select_backend()      the trained policy picks a backend
+  → forward_chat_completion()    the real HTTP call to that backend
+  → router.report_result()       score it, feed it back to the policy
+  → response, annotated with which backend served it and why
+```
+
+Start it with `nashgate route --config path/to/config.yaml` — see
+[docs/example.config.yaml](docs/example.config.yaml) for the format:
+a roster of backends (base URL, API key env var, model, cost/rate-limit)
+and a roster of callers (SLA, cost budget), plus an optional trained
+`policy_checkpoint` to load. The response body carries a `nashgate`
+field (`backend`, `latency_ms`, `cost`, `reward`) and an
+`X-Nashgate-Backend` response header, so you can see the routing
+decision without extra tooling.
+
+Token counts are estimated with a ~4-chars/token heuristic
+(`nashgate/gateway/tokens.py`) when a request needs pricing before a
+backend has responded, and corrected from real `usage` once it comes
+back — good enough to feed the router's observation, not a tokenizer
+replacement.
+
+Smoke-tested end-to-end with a mocked backend response: caller
+resolution, unknown-caller rejection, successful routing with reward
+reporting, and the backend-failure error path all verified through
+FastAPI's test client.
+
 ## Status
 
 - [x] Nash-SAC policy network (actor, twin critics, auto-tuned entropy, multi-player coordinator)
 - [x] The routing game — obs/action/reward, simulated backend contention (`nashgate/env/`)
 - [x] `router/` — wires live requests to the trained policy, with online learning
-- [ ] OpenAI-compatible proxy layer (`gateway/`) — the thing that actually calls backend_id over HTTP
+- [x] OpenAI-compatible proxy layer (`gateway/`)
 - [ ] Benchmark harness vs. static routers (weighted / latency-based)
 
 ## Layout
@@ -103,7 +138,13 @@ on synthetic live traffic.
 ```
 nashgate/
 ├── nashgate/
-│   ├── gateway/   OpenAI-compatible proxy — the thing agents talk to
+│   ├── gateway/   the OpenAI-compatible proxy — what agents talk to
+│   │   ├── app.py        FastAPI app: /v1/chat/completions, /healthz
+│   │   ├── config.py     loads a YAML roster into a running app
+│   │   ├── backends.py   GatewayBackend — connection info + routing config
+│   │   ├── callers.py    CallerRegistry — fixed caller roster
+│   │   ├── proxy.py      the actual HTTP forward to a chosen backend
+│   │   └── tokens.py     cheap token-count estimate for pricing/obs
 │   ├── router/    live_router.py — request -> backend, wraps policy/ + env/features
 │   ├── env/       the routing game — obs/action/reward, shared by training + serving
 │   │   ├── backend_state.py  per-backend queue / latency / rate-limit state
@@ -119,4 +160,5 @@ nashgate/
 │   └── cli/       nashgate route / policy / bench
 ├── tests/
 └── docs/
+    └── example.config.yaml
 ```

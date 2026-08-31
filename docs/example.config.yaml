@@ -1,0 +1,44 @@
+# nashgate gateway config — see nashgate/gateway/config.py
+#
+# Each caller (agent, tenant, workflow) gets its own trained agent, so
+# the roster below is fixed at startup: requests from a caller name
+# not listed here are rejected rather than silently mapped elsewhere.
+
+policy_checkpoint: null   # e.g. "./checkpoints/latest" — a NashEquilibriumRouter.save() dir
+explore: false            # true while still training online; false once you trust it to serve
+online_learning: true     # keep updating the policy from real traffic
+
+backends:
+  - name: fast-expensive
+    base_url: https://api.openai.com/v1
+    api_key_env: NASHGATE_BACKEND_FAST_KEY
+    model: gpt-4o-mini
+    cost_per_1k_tokens: 0.01
+    rate_limit_per_window: 500
+
+  - name: mid
+    base_url: https://api.anthropic.com/v1
+    api_key_env: NASHGATE_BACKEND_MID_KEY
+    model: claude-haiku-4-5
+    cost_per_1k_tokens: 0.002
+    rate_limit_per_window: 1000
+
+  - name: cheap-slow
+    base_url: http://localhost:11434/v1
+    api_key_env: NASHGATE_BACKEND_LOCAL_KEY
+    model: llama3
+    cost_per_1k_tokens: 0.0002
+    rate_limit_per_window: 2000
+
+callers:
+  - name: coding-agent
+    sla_latency_ms: 3000
+    cost_budget_per_window: 5.0
+
+  - name: support-bot
+    sla_latency_ms: 1500
+    cost_budget_per_window: 2.0
+
+  - name: batch-summarizer
+    sla_latency_ms: 8000
+    cost_budget_per_window: 1.0
