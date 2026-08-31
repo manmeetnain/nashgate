@@ -143,6 +143,19 @@ installs the CPU-only PyTorch build — the policy is a tiny MLP with no
 GPU work in the gateway, so there's no reason to drag in CUDA
 libraries. Built and run-verified locally (~1.4GB image).
 
+Or with `docker compose`:
+
+```bash
+cp .env.example .env   # fill in your backend API keys
+docker compose up --build
+```
+
+[docker-compose.yml](docker-compose.yml) mounts
+`docs/example.config.yaml`, reads secrets from `.env` (gitignored —
+never baked into the image), and publishes port 8000. Point it at your
+own config by editing the volume mount. Also build-and-run verified —
+`GET /healthz` returned `200` and the container reported `healthy`.
+
 ## The benchmark
 
 `nashgate bench --config path/to/config.yaml` trains (or loads, with

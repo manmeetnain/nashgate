@@ -1,0 +1,10 @@
+services:
+  gateway:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./docs/example.config.yaml:/config/config.yaml:ro
+    env_file:
+      - .env
+    restart: unless-stopped
