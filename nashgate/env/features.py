@@ -6,7 +6,6 @@ no train/serve skew in what the policy sees. See routing_env.py for
 the full field-by-field spec.
 """
 
-from typing import List
 
 import numpy as np
 
@@ -27,7 +26,7 @@ def obs_dim(n_backends: int) -> int:
     return LOCAL_OBS_DIM + SHARED_OBS_PER_BACKEND * n_backends
 
 
-def build_shared_obs(backends: List[BackendState], sla_ref_ms: float) -> np.ndarray:
+def build_shared_obs(backends: list[BackendState], sla_ref_ms: float) -> np.ndarray:
     features = []
     for backend in backends:
         features.extend([

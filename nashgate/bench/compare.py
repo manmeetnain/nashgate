@@ -1,7 +1,6 @@
 """Runs nashgate's trained policy and every static baseline against the
 same routing game and reports them side by side."""
 
-from typing import Dict, List, Optional
 
 from nashgate.bench.baselines import (
     CostBasedRouter,
@@ -18,13 +17,13 @@ from nashgate.policy import NashEquilibriumRouter
 
 
 def compare_routers(
-    backend_configs: List[BackendConfig],
-    caller_configs: List[CallerConfig],
+    backend_configs: list[BackendConfig],
+    caller_configs: list[CallerConfig],
     policy: NashEquilibriumRouter,
     n_steps: int = 5000,
     window_steps: int = 50,
     seed: int = 0,
-) -> Dict[str, BenchResult]:
+) -> dict[str, BenchResult]:
     n_callers = len(caller_configs)
     n_backends = len(backend_configs)
 
@@ -36,7 +35,7 @@ def compare_routers(
         "cost_based": CostBasedRouter(n_backends),
     }
 
-    results: Dict[str, BenchResult] = {}
+    results: dict[str, BenchResult] = {}
     for name, router in routers.items():
         # Fresh env per router, same seed, so every router faces the same
         # request-size/error-jitter draw schedule as far as its own action
@@ -49,7 +48,7 @@ def compare_routers(
     return results
 
 
-def format_table(results: Dict[str, BenchResult], title: Optional[str] = None) -> str:
+def format_table(results: dict[str, BenchResult], title: str | None = None) -> str:
     headers = ["router", "avg reward", "success", "violations", "fairness"]
     best_reward = max(r.avg_reward for r in results.values())
 

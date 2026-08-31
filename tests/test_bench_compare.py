@@ -13,8 +13,14 @@ def test_compare_routers_returns_all_five_routers(backend_configs, caller_config
 
 def test_format_table_includes_every_router_name_and_title():
     results = {
-        "nashgate": BenchResult(avg_reward=0.9, success_rate=0.95, violation_rate=0.05, fairness_jain=0.9, n_requests=100, backend_counts=[50, 50]),
-        "round_robin": BenchResult(avg_reward=0.5, success_rate=0.8, violation_rate=0.2, fairness_jain=1.0, n_requests=100, backend_counts=[50, 50]),
+        "nashgate": BenchResult(
+            avg_reward=0.9, success_rate=0.95, violation_rate=0.05, fairness_jain=0.9,
+            n_requests=100, backend_counts=[50, 50],
+        ),
+        "round_robin": BenchResult(
+            avg_reward=0.5, success_rate=0.8, violation_rate=0.2, fairness_jain=1.0,
+            n_requests=100, backend_counts=[50, 50],
+        ),
     }
     table = format_table(results, title="test run")
     assert "nashgate" in table
@@ -24,12 +30,18 @@ def test_format_table_includes_every_router_name_and_title():
 
 def test_format_table_marks_the_best_avg_reward():
     results = {
-        "a": BenchResult(avg_reward=0.9, success_rate=1.0, violation_rate=0.0, fairness_jain=1.0, n_requests=1, backend_counts=[1]),
-        "b": BenchResult(avg_reward=0.1, success_rate=1.0, violation_rate=0.0, fairness_jain=1.0, n_requests=1, backend_counts=[1]),
+        "a": BenchResult(
+            avg_reward=0.9, success_rate=1.0, violation_rate=0.0, fairness_jain=1.0,
+            n_requests=1, backend_counts=[1],
+        ),
+        "b": BenchResult(
+            avg_reward=0.1, success_rate=1.0, violation_rate=0.0, fairness_jain=1.0,
+            n_requests=1, backend_counts=[1],
+        ),
     }
     table = format_table(results)
     lines = table.splitlines()
-    a_line = next(l for l in lines if l.strip().startswith("│ a "))
-    b_line = next(l for l in lines if l.strip().startswith("│ b "))
+    a_line = next(line for line in lines if line.strip().startswith("│ a "))
+    b_line = next(line for line in lines if line.strip().startswith("│ b "))
     assert "★" in a_line
     assert "★" not in b_line

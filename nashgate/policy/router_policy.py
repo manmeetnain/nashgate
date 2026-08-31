@@ -11,7 +11,6 @@ equilibrium: a stable allocation where no player can do better by
 unilaterally routing elsewhere.
 """
 
-from typing import Dict, Optional
 
 import numpy as np
 
@@ -21,12 +20,12 @@ from nashgate.policy.agent import NashSACAgent
 class NashEquilibriumRouter:
     def __init__(self, n_players: int, obs_dim: int, n_backends: int, **agent_kwargs):
         self.n_players = n_players
-        self.agents: Dict[int, NashSACAgent] = {
+        self.agents: dict[int, NashSACAgent] = {
             i: NashSACAgent(player_id=i, obs_dim=obs_dim, n_actions=n_backends, **agent_kwargs)
             for i in range(n_players)
         }
 
-    def route(self, obs: Dict[int, np.ndarray], explore: bool = True) -> Dict[int, int]:
+    def route(self, obs: dict[int, np.ndarray], explore: bool = True) -> dict[int, int]:
         """One observation per player in, one backend choice per player out."""
         return {
             i: self.agents[i].select_action(obs[i], explore=explore)
@@ -38,7 +37,7 @@ class NashEquilibriumRouter:
         for i in range(self.n_players):
             self.agents[i].store(obs[i], actions[i], rewards[i], next_obs[i], done_f)
 
-    def update(self) -> Dict[int, Optional[dict]]:
+    def update(self) -> dict[int, dict | None]:
         return {i: self.agents[i].update() for i in range(self.n_players)}
 
     def save(self, path: str):

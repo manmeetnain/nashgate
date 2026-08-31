@@ -11,7 +11,6 @@ without any central coordinator.
 """
 
 import os
-from typing import Optional
 
 import numpy as np
 import torch
@@ -58,7 +57,7 @@ class NashSACAgent:
         auto_entropy: bool = True,
         buffer_capacity: int = 100_000,
         batch_size: int = 256,
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
         epsilon_floor: float = 0.02,
         target_entropy_scale: float = 0.3,
         alpha_max: float = 0.5,
@@ -140,7 +139,7 @@ class NashSACAgent:
         self.buffer.push(obs, action, reward, next_obs, done)
         self.total_steps += 1
 
-    def update(self) -> Optional[dict]:
+    def update(self) -> dict | None:
         if len(self.buffer) < self.batch_size:
             return None
 

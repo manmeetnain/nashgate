@@ -4,7 +4,6 @@ has its own trained agent, so an unrecognized caller is rejected
 rather than silently mapped onto someone else's policy."""
 
 from dataclasses import dataclass
-from typing import Dict, List
 
 from nashgate.env import CallerConfig
 
@@ -18,9 +17,9 @@ class NamedCaller:
 
 
 class CallerRegistry:
-    def __init__(self, callers: List[NamedCaller]):
-        self._by_name: Dict[str, int] = {c.name: i for i, c in enumerate(callers)}
-        self.configs: List[CallerConfig] = [c.config for c in callers]
+    def __init__(self, callers: list[NamedCaller]):
+        self._by_name: dict[str, int] = {c.name: i for i, c in enumerate(callers)}
+        self.configs: list[CallerConfig] = [c.config for c in callers]
 
     def resolve(self, name: str) -> int:
         if name not in self._by_name:
@@ -33,7 +32,7 @@ class CallerRegistry:
         return len(self.configs)
 
 
-def callers_from_dicts(raw: list) -> List[NamedCaller]:
+def callers_from_dicts(raw: list) -> list[NamedCaller]:
     out = []
     for entry in raw:
         out.append(NamedCaller(

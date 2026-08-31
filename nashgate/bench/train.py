@@ -3,7 +3,6 @@ game so `nashgate bench` has something real to compare when no
 checkpoint is given. Not a substitute for a proper training script;
 just enough steps to reach a stable, non-random policy."""
 
-from typing import List
 
 from nashgate.env.backend_state import BackendConfig
 from nashgate.env.caller_state import CallerConfig
@@ -12,8 +11,8 @@ from nashgate.policy import NashEquilibriumRouter
 
 
 def train_policy(
-    backend_configs: List[BackendConfig],
-    caller_configs: List[CallerConfig],
+    backend_configs: list[BackendConfig],
+    caller_configs: list[CallerConfig],
     steps: int = 20_000,
     window_steps: int = 50,
     batch_size: int = 256,

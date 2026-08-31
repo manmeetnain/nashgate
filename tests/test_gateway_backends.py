@@ -1,9 +1,8 @@
-import os
 
 import pytest
 
-from nashgate.gateway.backends import GatewayBackend, backends_from_dicts
 from nashgate.env.backend_state import BackendConfig
+from nashgate.gateway.backends import GatewayBackend, backends_from_dicts
 
 
 def test_api_key_reads_from_configured_env_var(monkeypatch):

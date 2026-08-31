@@ -50,7 +50,9 @@ def policy() -> None:
 
 @app.command()
 def bench(
-    config: str = typer.Option(..., "--config", "-c", help="Path to config YAML (same format as `route`; connection fields are ignored)"),
+    config: str = typer.Option(
+        ..., "--config", "-c", help="Path to config YAML (same format as `route`; connection fields are ignored)"
+    ),
     checkpoint: str = typer.Option(None, "--checkpoint", help="Trained policy dir to evaluate; trains a fresh one if omitted"),
     steps: int = typer.Option(5000, help="Steps to evaluate each router over"),
     train_steps: int = typer.Option(20_000, help="Steps to pretrain a fresh policy over, if no --checkpoint given"),

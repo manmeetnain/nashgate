@@ -9,7 +9,6 @@
 """
 
 from contextlib import asynccontextmanager
-from typing import List, Optional
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException
@@ -19,14 +18,13 @@ from nashgate.gateway.backends import GatewayBackend
 from nashgate.gateway.callers import CALLER_HEADER, CallerRegistry, NamedCaller
 from nashgate.gateway.proxy import forward_chat_completion
 from nashgate.gateway.tokens import estimate_request_tokens, total_tokens_from_usage
-from nashgate.policy import NashEquilibriumRouter
 from nashgate.router import LiveRouter
 
 
 def create_app(
-    backends: List[GatewayBackend],
-    callers: List[NamedCaller],
-    policy_checkpoint: Optional[str] = None,
+    backends: list[GatewayBackend],
+    callers: list[NamedCaller],
+    policy_checkpoint: str | None = None,
     explore: bool = False,
     online_learning: bool = True,
 ) -> FastAPI:

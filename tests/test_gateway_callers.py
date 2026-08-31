@@ -1,7 +1,7 @@
 import pytest
 
-from nashgate.gateway.callers import CallerRegistry, NamedCaller, callers_from_dicts
 from nashgate.env.caller_state import CallerConfig
+from nashgate.gateway.callers import CallerRegistry, NamedCaller, callers_from_dicts
 
 
 def test_resolve_returns_stable_index_by_registration_order():

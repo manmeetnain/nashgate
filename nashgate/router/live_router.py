@@ -19,7 +19,6 @@ to real traffic instead of freezing at whatever it learned offline.
 
 import time
 from dataclasses import dataclass
-from typing import List, Optional
 
 import numpy as np
 
@@ -41,9 +40,9 @@ class RoutedRequest:
 class LiveRouter:
     def __init__(
         self,
-        backend_configs: List[BackendConfig],
-        caller_configs: List[CallerConfig],
-        policy: Optional[NashEquilibriumRouter] = None,
+        backend_configs: list[BackendConfig],
+        caller_configs: list[CallerConfig],
+        policy: NashEquilibriumRouter | None = None,
         explore: bool = False,
         online_learning: bool = True,
         window_seconds: float = 60.0,
@@ -72,8 +71,8 @@ class LiveRouter:
     def from_checkpoint(
         cls,
         path: str,
-        backend_configs: List[BackendConfig],
-        caller_configs: List[CallerConfig],
+        backend_configs: list[BackendConfig],
+        caller_configs: list[CallerConfig],
         **kwargs,
     ) -> "LiveRouter":
         router = cls(backend_configs, caller_configs, **kwargs)

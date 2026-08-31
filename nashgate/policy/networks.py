@@ -8,7 +8,6 @@ where no single player can improve their own latency/cost/success
 by unilaterally shifting traffic elsewhere.
 """
 
-from typing import Tuple
 
 import torch
 import torch.nn as nn
@@ -44,7 +43,7 @@ class ActorNetwork(nn.Module):
             nn.Linear(hidden_dim, n_actions),
         )
 
-    def forward(self, obs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, obs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Returns (action_probs, log_probs), both [batch, n_actions]."""
         logits = self.net(obs)
         raw_probs = F.softmax(logits, dim=-1)
@@ -53,7 +52,7 @@ class ActorNetwork(nn.Module):
         log_probs = torch.log(action_probs + 1e-8)
         return action_probs, log_probs
 
-    def sample(self, obs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def sample(self, obs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Samples an action; returns (action, log_prob_of_action, entropy)."""
         action_probs, log_probs = self.forward(obs)
         dist = torch.distributions.Categorical(action_probs)

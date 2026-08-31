@@ -18,8 +18,12 @@ def test_obs_dim_formula():
 
 def make_backends():
     return [
-        BackendState(config=BackendConfig(base_latency_ms=500, latency_jitter_ms=50, cost_per_1k_tokens=0.01, rate_limit_per_window=10)),
-        BackendState(config=BackendConfig(base_latency_ms=1000, latency_jitter_ms=50, cost_per_1k_tokens=0.03, rate_limit_per_window=10)),
+        BackendState(config=BackendConfig(
+            base_latency_ms=500, latency_jitter_ms=50, cost_per_1k_tokens=0.01, rate_limit_per_window=10,
+        )),
+        BackendState(config=BackendConfig(
+            base_latency_ms=1000, latency_jitter_ms=50, cost_per_1k_tokens=0.03, rate_limit_per_window=10,
+        )),
     ]
 
 

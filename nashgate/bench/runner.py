@@ -1,7 +1,6 @@
 """Runs one router against the routing game and scores it."""
 
 from dataclasses import dataclass, field
-from typing import List
 
 from nashgate.env.routing_env import MultiAgentRoutingEnv
 
@@ -13,10 +12,10 @@ class BenchResult:
     violation_rate: float
     fairness_jain: float
     n_requests: int
-    backend_counts: List[int] = field(default_factory=list)
+    backend_counts: list[int] = field(default_factory=list)
 
 
-def jain_fairness_index(counts: List[int]) -> float:
+def jain_fairness_index(counts: list[int]) -> float:
     """1.0 = every backend got an equal share of traffic; 1/n = all
     traffic landed on one backend. Standard load-balancing fairness
     metric (Jain et al., 1984) — used here instead of raw variance

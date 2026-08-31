@@ -22,7 +22,7 @@ def test_reset_returns_one_obs_per_caller_with_correct_shape():
 
 def test_step_returns_reward_and_success_for_every_acting_caller():
     env = make_env()
-    obs = env.reset()
+    env.reset()
     actions = {i: 0 for i in range(env.n_callers)}
     next_obs, rewards, done, info = env.step(actions)
     assert set(rewards.keys()) == set(range(env.n_callers))
@@ -71,7 +71,9 @@ def test_congestion_makes_a_busy_backend_score_worse_next_step():
         base_latency_ms=200, latency_jitter_ms=0, cost_per_1k_tokens=0.001,
         rate_limit_per_window=1000, congestion_latency_ms_per_inflight=500,
     )]
-    env = make_env(episode_len=10, window_steps=1000, backend_configs=busy_backend, caller_configs=[CallerConfig(), CallerConfig()])
+    env = make_env(
+        episode_len=10, window_steps=1000, backend_configs=busy_backend, caller_configs=[CallerConfig(), CallerConfig()]
+    )
     env.reset()
     _, rewards_step1, _, _ = env.step({0: 0, 1: 0})
     _, rewards_step2, _, _ = env.step({0: 0, 1: 0})

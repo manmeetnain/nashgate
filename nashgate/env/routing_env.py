@@ -46,7 +46,6 @@ REWARD (per caller, per request): see nashgate/env/reward.py.
 """
 
 import random
-from typing import Dict, List, Tuple
 
 import numpy as np
 
@@ -63,8 +62,8 @@ class MultiAgentRoutingEnv:
 
     def __init__(
         self,
-        backend_configs: List[BackendConfig],
-        caller_configs: List[CallerConfig],
+        backend_configs: list[BackendConfig],
+        caller_configs: list[CallerConfig],
         episode_len: int = 200,
         window_steps: int = 50,
         seed: int = 0,
@@ -78,12 +77,12 @@ class MultiAgentRoutingEnv:
         self.obs_dim = obs_dim(self.n_backends)
 
         self._rng = random.Random(seed)
-        self.backends: List[BackendState] = []
-        self.callers: List[CallerRuntime] = []
+        self.backends: list[BackendState] = []
+        self.callers: list[CallerRuntime] = []
         self.step_count = 0
         self.reset()
 
-    def reset(self) -> Dict[int, np.ndarray]:
+    def reset(self) -> dict[int, np.ndarray]:
         self.backends = [BackendState(config=c) for c in self.backend_configs]
         self.callers = [CallerRuntime(config=c) for c in self.caller_configs]
         self.step_count = 0
@@ -94,9 +93,9 @@ class MultiAgentRoutingEnv:
         return self._build_all_obs()
 
     def step(
-        self, actions: Dict[int, int]
-    ) -> Tuple[Dict[int, np.ndarray], Dict[int, float], bool, dict]:
-        rewards: Dict[int, float] = {}
+        self, actions: dict[int, int]
+    ) -> tuple[dict[int, np.ndarray], dict[int, float], bool, dict]:
+        rewards: dict[int, float] = {}
         info: dict = {"rate_limited": [], "errored": [], "success": {}, "backend_chosen": dict(actions)}
 
         for caller_id, backend_idx in actions.items():
@@ -151,7 +150,7 @@ class MultiAgentRoutingEnv:
         done = self.step_count >= self.episode_len
         return self._build_all_obs(), rewards, done, info
 
-    def _build_all_obs(self) -> Dict[int, np.ndarray]:
+    def _build_all_obs(self) -> dict[int, np.ndarray]:
         shared = build_shared_obs(self.backends, self.caller_configs[0].sla_latency_ms)
         return {i: build_local_obs(self.callers[i], shared) for i in range(self.n_callers)}
 

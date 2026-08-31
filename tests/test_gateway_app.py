@@ -14,7 +14,9 @@ from nashgate.gateway.proxy import ForwardResult
 def app(backend_configs, monkeypatch):
     monkeypatch.setenv("FAKE_KEY", "sk-fake")
     backends = [
-        GatewayBackend(name=f"backend-{i}", base_url="https://x.invalid/v1", api_key_env="FAKE_KEY", model="m", routing_config=cfg)
+        GatewayBackend(
+            name=f"backend-{i}", base_url="https://x.invalid/v1", api_key_env="FAKE_KEY", model="m", routing_config=cfg
+        )
         for i, cfg in enumerate(backend_configs)
     ]
     callers = [NamedCaller(name="coding-agent", config=CallerConfig(sla_latency_ms=2000, cost_budget_per_window=5.0))]

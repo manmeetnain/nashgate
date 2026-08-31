@@ -2,7 +2,6 @@
 
 import time
 from dataclasses import dataclass
-from typing import Optional
 
 import httpx
 
@@ -12,11 +11,11 @@ from nashgate.gateway.backends import GatewayBackend
 @dataclass
 class ForwardResult:
     ok: bool
-    status_code: Optional[int]
+    status_code: int | None
     latency_ms: float
     body: dict
-    completion_tokens: Optional[int] = None
-    prompt_tokens: Optional[int] = None
+    completion_tokens: int | None = None
+    prompt_tokens: int | None = None
 
 
 async def forward_chat_completion(
