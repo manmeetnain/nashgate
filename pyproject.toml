@@ -3,6 +3,7 @@ name = "nashgate"
 version = "0.0.1"
 description = "LLM/agent gateway that routes under contention via Nash-equilibrium-seeking multi-agent RL"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
