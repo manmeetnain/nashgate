@@ -1,5 +1,7 @@
 # nashgate
 
+[![tests](https://github.com/manmeetnain/nashgate/actions/workflows/tests.yml/badge.svg)](https://github.com/manmeetnain/nashgate/actions/workflows/tests.yml)
+
 ```
 ╭─────────────────────────────────────────────────────────────────╮
 │ ✻ nashgate                                                       │
@@ -175,6 +177,8 @@ wiring, the gateway's caller resolution and error propagation (via
 FastAPI's test client with a mocked backend response — `httpx.MockTransport`,
 no real network calls), and every baseline router's routing logic
 plus the fairness math in `bench/`.
+
+Runs in CI on every push and PR to `main` — [`.github/workflows/tests.yml`](.github/workflows/tests.yml).
 
 ## Status
 
