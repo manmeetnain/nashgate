@@ -1,0 +1,14 @@
+.git
+.github
+.claude
+tests/
+docs/
+*.md
+!README.md
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+scratchpad/

@@ -128,6 +128,21 @@ resolution, unknown-caller rejection, successful routing with reward
 reporting, and the backend-failure error path all verified through
 FastAPI's test client.
 
+**Docker:**
+
+```bash
+docker build -t nashgate .
+docker run -p 8000:8000 \
+  -v $(pwd)/docs/example.config.yaml:/config/config.yaml:ro \
+  -e NASHGATE_BACKEND_FAST_KEY=sk-... \
+  nashgate
+```
+
+Runs as a non-root user, ships a `/healthz`-backed `HEALTHCHECK`, and
+installs the CPU-only PyTorch build — the policy is a tiny MLP with no
+GPU work in the gateway, so there's no reason to drag in CUDA
+libraries. Built and run-verified locally (~1.4GB image).
+
 ## The benchmark
 
 `nashgate bench --config path/to/config.yaml` trains (or loads, with
