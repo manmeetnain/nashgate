@@ -25,10 +25,14 @@ OBSERVATION (per caller) — local (5) + shared, per-backend (5 x n_backends):
     rate_limit_headroom[b]  fraction of this window's rate limit unused, [0, 1]
     cost_per_1k[b]          backend's cost per 1k tokens, normalized, [0, 1]
 
+  See nashgate/env/features.py — this is the exact function the live
+  router builds observations with too, against real state instead of
+  simulated state.
+
 ACTION (per caller): Discrete(n_backends) — which backend to send the
 next request to.
 
-REWARD (per caller, per request):
+REWARD (per caller, per request): see nashgate/env/reward.py.
   +1.0                          if the request succeeded within SLA
   -1.5                          if it was rate-limited, errored, or missed SLA
   -0.4 * clip(latency / sla, 0, 3)   always-on latency pressure
@@ -42,48 +46,16 @@ REWARD (per caller, per request):
 """
 
 import random
-from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
 import numpy as np
 
 from nashgate.env.backend_state import BackendConfig, BackendState
+from nashgate.env.caller_state import CallerConfig, CallerRuntime
+from nashgate.env.features import build_local_obs, build_shared_obs, obs_dim
+from nashgate.env.reward import HARD_TIMEOUT_MULTIPLE, compute_reward
 
-LOCAL_OBS_DIM = 5
-SHARED_OBS_PER_BACKEND = 5
-
-W_SUCCESS = 1.0
-W_VIOLATION = 1.5
-W_LATENCY = 0.4
-W_COST = 0.3
-
-OWN_CONCURRENCY_CAP = 8.0
-QUEUE_DEPTH_NORM = 20.0
-MAX_REQUEST_TOKENS = 4000.0
-MAX_COST_PER_1K_REF = 0.06
-HARD_TIMEOUT_MULTIPLE = 3.0
 RANDOM_ERROR_RATE = 0.01
-
-
-@dataclass
-class CallerConfig:
-    sla_latency_ms: float = 2000.0
-    cost_budget_per_window: float = 1.0
-    min_request_tokens: int = 200
-    max_request_tokens: int = 2000
-
-
-@dataclass
-class _CallerRuntime:
-    config: CallerConfig
-    inflight: int = 0
-    budget_remaining: float = field(init=False)
-    last_reward: float = 0.0
-    success_ema: float = 1.0
-    pending_tokens: int = 0
-
-    def __post_init__(self):
-        self.budget_remaining = self.config.cost_budget_per_window
 
 
 class MultiAgentRoutingEnv:
@@ -103,17 +75,17 @@ class MultiAgentRoutingEnv:
         self.n_callers = len(caller_configs)
         self.episode_len = episode_len
         self.window_steps = window_steps
-        self.obs_dim = LOCAL_OBS_DIM + SHARED_OBS_PER_BACKEND * self.n_backends
+        self.obs_dim = obs_dim(self.n_backends)
 
         self._rng = random.Random(seed)
         self.backends: List[BackendState] = []
-        self.callers: List[_CallerRuntime] = []
+        self.callers: List[CallerRuntime] = []
         self.step_count = 0
         self.reset()
 
     def reset(self) -> Dict[int, np.ndarray]:
         self.backends = [BackendState(config=c) for c in self.backend_configs]
-        self.callers = [_CallerRuntime(config=c) for c in self.caller_configs]
+        self.callers = [CallerRuntime(config=c) for c in self.caller_configs]
         self.step_count = 0
         for caller in self.callers:
             caller.pending_tokens = self._rng.randint(
@@ -152,12 +124,9 @@ class MultiAgentRoutingEnv:
                     info["errored"].append(caller_id)
 
             backend.update_ema(latency_ms, errored)
+            reward = compute_reward(latency_ms, cost, success, caller.config)
 
-            reward = (W_SUCCESS if success else -W_VIOLATION)
-            reward -= W_LATENCY * min(latency_ms / caller.config.sla_latency_ms, HARD_TIMEOUT_MULTIPLE)
-            reward -= W_COST * min(cost / max(caller.config.cost_budget_per_window, 1e-6), HARD_TIMEOUT_MULTIPLE)
-
-            caller.inflight = min(int(OWN_CONCURRENCY_CAP), caller.inflight + 1)
+            caller.inflight += 1
             caller.budget_remaining = max(0.0, caller.budget_remaining - cost)
             caller.success_ema = 0.9 * caller.success_ema + 0.1 * float(success)
             caller.last_reward = reward
@@ -176,38 +145,14 @@ class MultiAgentRoutingEnv:
             for backend in self.backends:
                 backend.reset_window()
             for caller in self.callers:
-                caller.budget_remaining = caller.config.cost_budget_per_window
+                caller.reset_window()
 
         done = self.step_count >= self.episode_len
         return self._build_all_obs(), rewards, done, info
 
     def _build_all_obs(self) -> Dict[int, np.ndarray]:
-        shared = self._build_shared_obs()
-        return {i: self._build_local_obs(i, shared) for i in range(self.n_callers)}
-
-    def _build_shared_obs(self) -> np.ndarray:
-        features = []
-        for backend in self.backends:
-            caller_sla_ref = self.caller_configs[0].sla_latency_ms
-            features.extend([
-                min(backend.in_flight / QUEUE_DEPTH_NORM, 1.0),
-                min(backend.latency_ema_ms / caller_sla_ref, HARD_TIMEOUT_MULTIPLE),
-                backend.error_rate_ema,
-                backend.rate_limit_headroom(),
-                min(backend.config.cost_per_1k_tokens / MAX_COST_PER_1K_REF, 1.0),
-            ])
-        return np.array(features, dtype=np.float32)
-
-    def _build_local_obs(self, caller_id: int, shared: np.ndarray) -> np.ndarray:
-        caller = self.callers[caller_id]
-        local = np.array([
-            caller.budget_remaining / max(caller.config.cost_budget_per_window, 1e-6),
-            min(caller.inflight / OWN_CONCURRENCY_CAP, 1.0),
-            float(np.clip(caller.last_reward, -1.0, 1.0)),
-            min(caller.pending_tokens / MAX_REQUEST_TOKENS, 1.0),
-            caller.success_ema,
-        ], dtype=np.float32)
-        return np.concatenate([local, shared])
+        shared = build_shared_obs(self.backends, self.caller_configs[0].sla_latency_ms)
+        return {i: build_local_obs(self.callers[i], shared) for i in range(self.n_callers)}
 
 
 if __name__ == "__main__":

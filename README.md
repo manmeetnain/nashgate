@@ -60,17 +60,42 @@ independent learners something to find an equilibrium over.
   self-defeats — exactly the dynamic an equilibrium-seeking policy has
   to learn to spread load against.
 
-Implemented in `nashgate/env/routing_env.py`, and verified end-to-end
-against the policy: `env.step()` → `router.route()` → `router.update()`
-runs a full training loop with reward accumulating and alpha
-stabilizing per player.
+Implemented in `nashgate/env/routing_env.py`, with the observation and
+reward math factored into `nashgate/env/features.py` and
+`nashgate/env/reward.py` — the live router imports those same
+functions, so a request scores identically whether it happened in
+training or in production.
+
+## The router
+
+`nashgate/router/live_router.py` is what a gateway calls per request:
+
+```python
+routed = router.select_backend(caller_id, request_tokens)
+# ... actually call routed.backend_id, time it, catch errors ...
+router.report_result(routed, latency_ms, cost, success)
+```
+
+`select_backend()` builds an observation from the router's own live
+backend/caller state and asks that caller's trained agent which
+backend to use. `report_result()` scores the real outcome with the
+same reward used in training, updates live state so the *next*
+request already reflects this one's effect on load, and — if
+`online_learning` is on — feeds the transition back into that agent's
+replay buffer and runs an update, so the policy keeps adapting to
+real traffic instead of freezing at whatever it learned offline.
+Load a trained policy with `LiveRouter.from_checkpoint(path, ...)`, or
+let it construct a fresh (untrained) one to serve on. Verified
+end-to-end: train against `MultiAgentRoutingEnv` → `policy.save()` →
+`LiveRouter.from_checkpoint()` → `select_backend()` / `report_result()`
+on synthetic live traffic.
 
 ## Status
 
 - [x] Nash-SAC policy network (actor, twin critics, auto-tuned entropy, multi-player coordinator)
 - [x] The routing game — obs/action/reward, simulated backend contention (`nashgate/env/`)
-- [ ] OpenAI-compatible proxy layer (`gateway/`)
-- [ ] `router/` — wires live requests to the trained policy
+- [x] `router/` — wires live requests to the trained policy, with online learning
+- [ ] OpenAI-compatible proxy layer (`gateway/`) — the thing that actually calls backend_id over HTTP
 - [ ] Benchmark harness vs. static routers (weighted / latency-based)
 
 ## Layout
@@ -79,10 +104,13 @@ stabilizing per player.
 nashgate/
 ├── nashgate/
 │   ├── gateway/   OpenAI-compatible proxy — the thing agents talk to
-│   ├── router/    request → backend selection, wraps policy/
-│   ├── env/       the routing game — simulated backend contention for training
+│   ├── router/    live_router.py — request -> backend, wraps policy/ + env/features
+│   ├── env/       the routing game — obs/action/reward, shared by training + serving
 │   │   ├── backend_state.py  per-backend queue / latency / rate-limit state
-│   │   └── routing_env.py    MultiAgentRoutingEnv — obs/action/reward
+│   │   ├── caller_state.py   per-caller budget / inflight / success-rate state
+│   │   ├── features.py       obs-building — same function used live and in training
+│   │   ├── reward.py         reward shaping — same function used live and in training
+│   │   └── routing_env.py    MultiAgentRoutingEnv — the simulated game, for training
 │   ├── policy/    Nash-SAC equilibrium-seeking controller
 │   │   ├── networks.py       actor / critic architectures
 │   │   ├── replay_buffer.py
