@@ -1,6 +1,7 @@
 # nashgate
 
 [![tests](https://github.com/manmeetnain/nashgate/actions/workflows/tests.yml/badge.svg)](https://github.com/manmeetnain/nashgate/actions/workflows/tests.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ```
 ╭─────────────────────────────────────────────────────────────────╮
