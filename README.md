@@ -223,3 +223,11 @@ nashgate/
 └── docs/
     └── example.config.yaml
 ```
+
+## Community
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — dev setup, layer boundaries, PR checklist
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — Contributor Covenant v2.1
+- [SECURITY.md](SECURITY.md) — how to report a vulnerability, and the design boundaries worth knowing before you deploy this
+- [CHANGELOG.md](CHANGELOG.md) — what's shipped, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
+- [LICENSE](LICENSE) — MIT
