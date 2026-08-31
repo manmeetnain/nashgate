@@ -97,7 +97,7 @@ class MultiAgentRoutingEnv:
         self, actions: Dict[int, int]
     ) -> Tuple[Dict[int, np.ndarray], Dict[int, float], bool, dict]:
         rewards: Dict[int, float] = {}
-        info: dict = {"rate_limited": [], "errored": []}
+        info: dict = {"rate_limited": [], "errored": [], "success": {}, "backend_chosen": dict(actions)}
 
         for caller_id, backend_idx in actions.items():
             caller = self.callers[caller_id]
@@ -125,6 +125,7 @@ class MultiAgentRoutingEnv:
 
             backend.update_ema(latency_ms, errored)
             reward = compute_reward(latency_ms, cost, success, caller.config)
+            info["success"][caller_id] = success
 
             caller.inflight += 1
             caller.budget_remaining = max(0.0, caller.budget_remaining - cost)

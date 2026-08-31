@@ -49,9 +49,41 @@ def policy() -> None:
 
 
 @app.command()
-def bench() -> None:
+def bench(
+    config: str = typer.Option(..., "--config", "-c", help="Path to config YAML (same format as `route`; connection fields are ignored)"),
+    checkpoint: str = typer.Option(None, "--checkpoint", help="Trained policy dir to evaluate; trains a fresh one if omitted"),
+    steps: int = typer.Option(5000, help="Steps to evaluate each router over"),
+    train_steps: int = typer.Option(20_000, help="Steps to pretrain a fresh policy over, if no --checkpoint given"),
+    seed: int = typer.Option(0, help="Random seed — same seed used for every router's env"),
+) -> None:
     """Replay traffic and compare against static routing."""
-    typer.echo("nashgate bench: not implemented yet")
+    from nashgate.bench import compare_routers, format_table, train_policy
+    from nashgate.env import obs_dim
+    from nashgate.gateway.backends import backends_from_dicts
+    from nashgate.gateway.callers import callers_from_dicts
+    from nashgate.gateway.config import load_config
+    from nashgate.policy import NashEquilibriumRouter
+
+    cfg = load_config(config)
+    backend_configs = [b.routing_config for b in backends_from_dicts(cfg["backends"])]
+    caller_configs = [c.config for c in callers_from_dicts(cfg["callers"])]
+
+    if checkpoint:
+        policy = NashEquilibriumRouter(
+            n_players=len(caller_configs),
+            obs_dim=obs_dim(len(backend_configs)),
+            n_backends=len(backend_configs),
+        )
+        policy.load(checkpoint)
+        typer.echo(f"loaded policy from {checkpoint}")
+    else:
+        typer.echo(f"no --checkpoint given, pretraining a fresh policy for {train_steps} steps...")
+        policy = train_policy(backend_configs, caller_configs, steps=train_steps, seed=seed)
+
+    typer.echo(f"evaluating {len(backend_configs)} backends x {len(caller_configs)} callers over {steps} steps...")
+    results = compare_routers(backend_configs, caller_configs, policy, n_steps=steps, seed=seed)
+    title = f"nashgate bench — {steps} steps, {len(backend_configs)} backends, {len(caller_configs)} callers, seed={seed}"
+    typer.echo(format_table(results, title=title))
 
 
 if __name__ == "__main__":

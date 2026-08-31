@@ -125,13 +125,47 @@ resolution, unknown-caller rejection, successful routing with reward
 reporting, and the backend-failure error path all verified through
 FastAPI's test client.
 
+## The benchmark
+
+`nashgate bench --config path/to/config.yaml` trains (or loads, with
+`--checkpoint`) a policy and runs it against the same routing game as
+every static baseline a real gateway ships today — `round_robin`,
+`weighted` (fixed, capacity-proportional — LiteLLM's default),
+`latency_based` (greedy lowest-EMA — what most gateways call "smart"
+routing), and `cost_based` (greedy cheapest) — over the identical
+traffic, and reports avg reward, success rate, violation rate, and
+load fairness (Jain's index: 1.0 = perfectly even split, 1/n = all
+traffic on one backend).
+
+The result is contention-dependent, which is the whole thesis, not a
+caveat on it:
+
+- **Under real scarcity** (rate limits tight relative to demand — 4
+  callers, backends capped at 40–200 req/window) `latency_based`
+  collapses: every caller greedily picks the same "fastest right now"
+  backend simultaneously, drives its latency through the roof, and
+  averages a **negative** reward with a 79% violation rate. `nashgate`
+  and `weighted` both stay well ahead; `cost_based` piles everyone
+  onto the cheapest backend (fairness 0.33) and pays for it in
+  violations.
+- **Under light load** (generous rate limits, nothing actually
+  contended) every router — including `round_robin` — lands within a
+  few percent of `nashgate`, because there's no congestion to route
+  around. The equilibrium-seeking policy only has an edge when there's
+  a real game being played; it's not claiming to beat a coin flip when
+  there's nothing to compete over.
+
+`--train-steps` (default 20k) is a lightweight demo-scale pretrain,
+not a tuned research run — enough to reach a stable, non-random
+policy for comparison, not a benchmark-grade result on its own.
+
 ## Status
 
 - [x] Nash-SAC policy network (actor, twin critics, auto-tuned entropy, multi-player coordinator)
 - [x] The routing game — obs/action/reward, simulated backend contention (`nashgate/env/`)
 - [x] `router/` — wires live requests to the trained policy, with online learning
 - [x] OpenAI-compatible proxy layer (`gateway/`)
-- [ ] Benchmark harness vs. static routers (weighted / latency-based)
+- [x] Benchmark harness vs. static routers (`nashgate/bench/`)
 
 ## Layout
 
@@ -146,6 +180,11 @@ nashgate/
 │   │   ├── proxy.py      the actual HTTP forward to a chosen backend
 │   │   └── tokens.py     cheap token-count estimate for pricing/obs
 │   ├── router/    live_router.py — request -> backend, wraps policy/ + env/features
+│   ├── bench/     nashgate vs. static routing, on the same traffic
+│   │   ├── baselines.py  round_robin / weighted / latency_based / cost_based
+│   │   ├── runner.py     runs one router, scores reward/success/fairness
+│   │   ├── train.py      lightweight pretrain for `bench` without a checkpoint
+│   │   └── compare.py    runs every router, formats the comparison table
 │   ├── env/       the routing game — obs/action/reward, shared by training + serving
 │   │   ├── backend_state.py  per-backend queue / latency / rate-limit state
 │   │   ├── caller_state.py   per-caller budget / inflight / success-rate state
