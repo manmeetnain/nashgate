@@ -8,6 +8,7 @@
       -> return the backend's response, annotated with which backend served it
 """
 
+from contextlib import asynccontextmanager
 from typing import List, Optional
 
 import httpx
@@ -44,11 +45,16 @@ def create_app(
         )
     )
 
-    app = FastAPI(title="nashgate")
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        app.state.http_client = httpx.AsyncClient()
+        yield
+        await app.state.http_client.aclose()
+
+    app = FastAPI(title="nashgate", lifespan=lifespan)
     app.state.live_router = live_router
     app.state.backends = backends
     app.state.registry = registry
-    app.state.http_client = httpx.AsyncClient()
 
     @app.get("/healthz")
     def healthz():
@@ -92,9 +98,5 @@ def create_app(
             "reward": round(reward, 4),
         }
         return JSONResponse(response_body, headers={"X-Nashgate-Backend": backend.name})
-
-    @app.on_event("shutdown")
-    async def shutdown():
-        await app.state.http_client.aclose()
 
     return app

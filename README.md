@@ -159,6 +159,23 @@ caveat on it:
 not a tuned research run — enough to reach a stable, non-random
 policy for comparison, not a benchmark-grade result on its own.
 
+## Testing
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+93 tests covering every layer: backend/caller state transitions and
+rate-limiting, the epsilon-floor and entropy-clamping behavior in the
+actor/critic networks, the SAC agent's update lifecycle and
+save/load round-trip, the routing game's contention and reward
+mechanics, the live router's observation-building and online-learning
+wiring, the gateway's caller resolution and error propagation (via
+FastAPI's test client with a mocked backend response — `httpx.MockTransport`,
+no real network calls), and every baseline router's routing logic
+plus the fairness math in `bench/`.
+
 ## Status
 
 - [x] Nash-SAC policy network (actor, twin critics, auto-tuned entropy, multi-player coordinator)
