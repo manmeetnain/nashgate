@@ -5,9 +5,13 @@
 ```bash
 git clone https://github.com/manmeetnain/nashgate.git
 cd nashgate
-pip install -e ".[dev]"
-pytest
+make dev     # pip install -e ".[dev]"
+make check   # lint + test — what CI runs
 ```
+
+`make help` lists every command (`test`, `lint`, `format`, `route`,
+`bench`, `docker-build`, `compose-up`, `clean`, ...) — see the
+[Makefile](Makefile).
 
 93+ tests, no external services required — the gateway tests mock the
 HTTP layer with `httpx.MockTransport`, nothing hits a real backend.
@@ -26,7 +30,8 @@ training and serving score requests identically.
 
 ## Before opening a PR
 
-- `pytest` passes locally — CI runs the same suite on every push and PR.
+- `make check` passes locally — CI runs the same lint + test suite on
+  every push and PR.
 - New behavior gets a test. A bug fix gets a test that fails without
   the fix.
 - If you touch `env/features.py` or `env/reward.py`, check whether the

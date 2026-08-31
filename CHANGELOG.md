@@ -37,10 +37,19 @@ there's a tagged release — everything so far is pre-release, on `main`.
 - **Tests** — 93 tests across every layer, including the gateway's
   HTTP surface via FastAPI's test client with `httpx.MockTransport`
   (no real network calls).
-- **CI** — GitHub Actions workflow running the full test suite on
-  every push and PR to `main`.
+- **CI** — GitHub Actions workflows running lint + the full test suite
+  (`tests.yml`) and a Docker build (`docker.yml`) on every push and PR
+  to `main`.
 - MIT [LICENSE](LICENSE), [CONTRIBUTING.md](CONTRIBUTING.md),
-  [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SECURITY.md](SECURITY.md).
+  [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [SECURITY.md](SECURITY.md),
+  [CHANGELOG.md](CHANGELOG.md), issue templates, a PR template.
+- **Docker** — `Dockerfile` (CPU-only PyTorch, non-root user,
+  `/healthz`-backed `HEALTHCHECK`) and `docker-compose.yml`; both
+  build- and run-verified, not just written.
+- **`ruff`** for linting, and a **`Makefile`** wiring together every
+  dev command (`dev`, `test`, `lint`, `format`, `check`, `route`,
+  `bench`, `docker-build`, `compose-up`, `clean`) so none of this needs
+  to be re-discovered per contributor.
 
 ### Fixed
 
@@ -50,3 +59,6 @@ there's a tagged release — everything so far is pre-release, on `main`.
   first real CI run.
 - `gateway/app.py` used FastAPI's deprecated `@app.on_event("shutdown")`;
   replaced with a proper `lifespan` context manager.
+- Modernized legacy `typing.Dict`/`List`/`Optional` usage to built-in
+  generics (`dict`/`list`/`X | None`) across the codebase, and removed
+  a couple of unused imports/variables — surfaced by adding `ruff`.

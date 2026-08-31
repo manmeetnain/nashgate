@@ -191,24 +191,36 @@ caveat on it:
 not a tuned research run — enough to reach a stable, non-random
 policy for comparison, not a benchmark-grade result on its own.
 
-## Testing
+## Development
 
 ```bash
-pip install -e ".[dev]"
-pytest
+make dev     # pip install -e ".[dev]"
+make check   # lint + test — what CI runs
 ```
 
-93 tests covering every layer: backend/caller state transitions and
-rate-limiting, the epsilon-floor and entropy-clamping behavior in the
-actor/critic networks, the SAC agent's update lifecycle and
-save/load round-trip, the routing game's contention and reward
-mechanics, the live router's observation-building and online-learning
-wiring, the gateway's caller resolution and error propagation (via
-FastAPI's test client with a mocked backend response — `httpx.MockTransport`,
-no real network calls), and every baseline router's routing logic
-plus the fairness math in `bench/`.
+`make help` lists everything: `test`, `lint`, `format`/`format-check`
+(ruff), `route`/`bench` against the example config, `docker-build`/
+`docker-run`, `compose-up`/`compose-down`, `clean`. See the
+[Makefile](Makefile).
 
-Runs in CI on every push and PR to `main` — [`.github/workflows/tests.yml`](.github/workflows/tests.yml).
+**Testing** — 93 tests covering every layer: backend/caller state
+transitions and rate-limiting, the epsilon-floor and entropy-clamping
+behavior in the actor/critic networks, the SAC agent's update
+lifecycle and save/load round-trip, the routing game's contention and
+reward mechanics, the live router's observation-building and
+online-learning wiring, the gateway's caller resolution and error
+propagation (via FastAPI's test client with a mocked backend response
+— `httpx.MockTransport`, no real network calls), and every baseline
+router's routing logic plus the fairness math in `bench/`.
+
+**Linting** — `ruff check .`; `ruff format` is available via
+`make format` but isn't CI-enforced, since the default formatter would
+explode a lot of intentionally compact multi-value lines (dataclass
+calls, test setup) into one-arg-per-line — a stylistic tradeoff, not
+a correctness one.
+
+Both run in CI on every push and PR to `main` —
+[`.github/workflows/tests.yml`](.github/workflows/tests.yml).
 
 ## Status
 

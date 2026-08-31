@@ -9,7 +9,7 @@
 
 ## Checklist
 
-- [ ] `pytest` passes locally
+- [ ] `make check` passes locally (lint + test)
 - [ ] New behavior has a test; a bug fix has a test that fails without the fix
 - [ ] If this touches `env/features.py` or `env/reward.py` — checked whether
       `bench/`'s baselines need re-evaluating, since they read the same
