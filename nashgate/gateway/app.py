@@ -6,17 +6,27 @@
       -> forward_chat_completion()    (the real HTTP call)
       -> router.report_result()       (score it, feed it back to the policy)
       -> return the backend's response, annotated with which backend served it
+
+For a streaming request (`body["stream"]` truthy), the connection to
+the backend is opened and its status checked *before* any response is
+returned to the caller — that's what lets a backend error still come
+back as a proper HTTP error status instead of a 200 stream with an
+error buried in the body. Only once the backend has accepted the
+request does this become a `StreamingResponse` passing chunks through
+live; the routing outcome is reported to the policy only after the
+stream finishes (or drops), since latency/cost/success aren't known
+until then.
 """
 
 from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from nashgate.gateway.backends import GatewayBackend
 from nashgate.gateway.callers import CALLER_HEADER, CallerRegistry, NamedCaller
-from nashgate.gateway.proxy import forward_chat_completion
+from nashgate.gateway.proxy import forward_chat_completion, iter_stream_chunks, open_chat_completion_stream
 from nashgate.gateway.tokens import estimate_request_tokens, total_tokens_from_usage
 from nashgate.router import LiveRouter
 
@@ -72,6 +82,30 @@ def create_app(
 
         routed = live_router.select_backend(caller_id, request_tokens)
         backend = backends[routed.backend_id]
+
+        if body.get("stream"):
+            response, stream_result = await open_chat_completion_stream(app.state.http_client, backend, body)
+            if response is None:
+                live_router.report_result(routed, latency_ms=stream_result.latency_ms, cost=0.0, success=False)
+                raise HTTPException(status_code=stream_result.status_code or 502, detail=stream_result.error_body)
+
+            async def _generate():
+                async for chunk in iter_stream_chunks(response, stream_result):
+                    yield chunk
+                usage = (
+                    {"prompt_tokens": stream_result.prompt_tokens, "completion_tokens": stream_result.completion_tokens}
+                    if stream_result.prompt_tokens is not None or stream_result.completion_tokens is not None
+                    else None
+                )
+                total_tokens = total_tokens_from_usage(usage or {}, fallback=request_tokens)
+                cost = (total_tokens / 1000.0) * backend.routing_config.cost_per_1k_tokens
+                live_router.report_result(
+                    routed, latency_ms=stream_result.latency_ms, cost=cost, success=stream_result.ok
+                )
+
+            return StreamingResponse(
+                _generate(), media_type="text/event-stream", headers={"X-Nashgate-Backend": backend.name}
+            )
 
         result = await forward_chat_completion(app.state.http_client, backend, body)
 

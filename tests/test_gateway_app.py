@@ -7,7 +7,7 @@ from nashgate.env.caller_state import CallerConfig
 from nashgate.gateway.app import create_app
 from nashgate.gateway.backends import GatewayBackend
 from nashgate.gateway.callers import NamedCaller
-from nashgate.gateway.proxy import ForwardResult
+from nashgate.gateway.proxy import ForwardResult, StreamResult
 
 
 @pytest.fixture
@@ -87,6 +87,52 @@ def test_backend_failure_propagates_as_error_and_still_reports_to_policy(app, ba
     assert r.status_code == 503
     # even a failed request is scored and fed back to the policy, since
     # that's exactly the outcome the router needs to learn to avoid
+    assert len(agent.buffer) == buffer_before + 1
+
+
+async def _fake_iter_stream_chunks_ok(response, result):
+    result.prompt_tokens = 7
+    result.completion_tokens = 3
+    result.ok = True
+    result.latency_ms = 42.0
+    yield b'data: {"choices":[{"delta":{"content":"hi"}}]}\n\n'
+    yield b"data: [DONE]\n\n"
+
+
+def test_streaming_request_returns_sse_and_reports_to_policy(client):
+    open_result = StreamResult(ok=True, status_code=200)
+    with (
+        patch("nashgate.gateway.app.open_chat_completion_stream", new=AsyncMock(return_value=(object(), open_result))),
+        patch("nashgate.gateway.app.iter_stream_chunks", new=_fake_iter_stream_chunks_ok),
+    ):
+        r = client.post(
+            "/v1/chat/completions",
+            json={"messages": [{"role": "user", "content": "hi"}], "stream": True},
+            headers={"X-Nashgate-Caller": "coding-agent"},
+        )
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/event-stream")
+    assert "x-nashgate-backend" in r.headers
+    assert '"content":"hi"' in r.text
+    assert "[DONE]" in r.text
+
+
+def test_streaming_open_failure_returns_proper_status_and_still_reports_to_policy(app):
+    agent = app.state.live_router.policy.agents[0]
+    buffer_before = len(agent.buffer)
+    fail_result = StreamResult(ok=False, status_code=503, error_body={"error": {"message": "boom"}})
+    with (
+        TestClient(app) as client,
+        patch("nashgate.gateway.app.open_chat_completion_stream", new=AsyncMock(return_value=(None, fail_result))),
+    ):
+        r = client.post(
+            "/v1/chat/completions",
+            json={"messages": [{"role": "user", "content": "hi"}], "stream": True},
+            headers={"X-Nashgate-Caller": "coding-agent"},
+        )
+    assert r.status_code == 503
+    # a stream that never opened is still reported (as a failure) to the
+    # policy, same as any other failed routing decision
     assert len(agent.buffer) == buffer_before + 1
 
 
