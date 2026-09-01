@@ -6,6 +6,15 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-01
+
+Closes two of the three items that were open after 0.1.0 — real CLI
+training and gateway streaming. The third (live-LLM integration
+testing) needs real API keys/spend, so it stays open; see
+[SECURITY.md](SECURITY.md) and [CONTRIBUTING.md](CONTRIBUTING.md#whats-open).
+Not tagged 1.0.0: that's a stable-API signal this project hasn't
+earned yet, on the same grounds.
+
 ### Added
 
 - **`nashgate policy train` / `policy inspect`** — a real CLI for
@@ -87,5 +96,6 @@ gateway, benchmark) working end to end, with tests and CI to back it.
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
 
-[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.2.0
 [0.1.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.1.0
