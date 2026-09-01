@@ -6,6 +6,26 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`nashgate policy train` / `policy inspect`** — a real CLI for
+  training a policy against a config's routing game (with progress
+  reporting) and saving a checkpoint, plus inspecting a saved
+  checkpoint's per-player step/update counts and entropy temperature.
+  Was a stub before; the training loop itself moved to
+  `nashgate/policy/train.py` as the canonical implementation, shared
+  with `nashgate bench`'s own pretrain path (`nashgate/bench/train.py`
+  now just re-exports it).
+- **Streaming support in the gateway** — `"stream": true` requests get
+  a real SSE passthrough (`StreamingResponse`) instead of only working
+  non-streaming. The connection opens and its status is checked before
+  any response commits, so a backend error still surfaces as a proper
+  HTTP status rather than a 200 stream with an error buried in the
+  body. Verified against mocked backends in tests, and separately
+  against two real running servers over real HTTP (a mock
+  OpenAI-compatible backend + the actual gateway process) — live
+  incremental SSE passthrough, and a real 429 correctly propagating.
+
 ## [0.1.0] - 2026-09-01
 
 First tagged release — the full pipeline (policy, game, router,

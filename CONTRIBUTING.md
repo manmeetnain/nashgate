@@ -55,10 +55,10 @@ training and serving score requests identically.
 
 The README's [Status](README.md#status) section is current as of the
 last update to this file. Beyond that: real integration testing
-against a live LLM backend (everything today is tested against
-simulated or mocked traffic), streaming response support in the
-gateway, and a proper (non-demo-scale) training script are all
-open — check open issues before starting on something larger.
+against a live LLM backend is open (everything today is tested against
+simulated or mocked traffic, and it needs real API keys/spend someone
+has to decide to provide) — check open issues before starting on
+something larger.
 
 ## License
 

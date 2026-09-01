@@ -124,10 +124,27 @@ backend has responded, and corrected from real `usage` once it comes
 back — good enough to feed the router's observation, not a tokenizer
 replacement.
 
+**Streaming** (`"stream": true` in the request body) is supported: the
+connection to the backend opens and its status is checked *before* any
+response is returned to the caller, so a backend error still comes
+back as a proper HTTP status — not a 200 stream with an error buried
+in the body. Once the backend accepts the request, chunks pass through
+live via `StreamingResponse`; the routing outcome (latency, cost,
+success) is only reported to the policy once the stream finishes or
+drops, since none of that is known until then. Token usage is read
+from a trailing `usage` chunk when the backend includes one (the
+`stream_options: {include_usage: true}` convention), falling back to
+the same request-size estimate otherwise.
+
 Smoke-tested end-to-end with a mocked backend response: caller
 resolution, unknown-caller rejection, successful routing with reward
-reporting, and the backend-failure error path all verified through
-FastAPI's test client.
+reporting, and the backend-failure error path (both streaming and not)
+all verified through FastAPI's test client — and separately verified
+against two real running servers (a mock OpenAI-compatible backend and
+the actual gateway process, both over real HTTP): live SSE passthrough
+with incrementally-arriving chunks, and a real 429 from the backend
+correctly surfacing as a 429 through the gateway instead of a broken
+200 stream.
 
 **Docker:**
 
@@ -156,6 +173,27 @@ docker compose up --build
 never baked into the image), and publishes port 8000. Point it at your
 own config by editing the volume mount. Also build-and-run verified —
 `GET /healthz` returned `200` and the container reported `healthy`.
+
+## Training a policy
+
+```bash
+nashgate policy train --config path/to/config.yaml --out ./checkpoints/latest --steps 100000
+nashgate policy inspect --config path/to/config.yaml --checkpoint ./checkpoints/latest
+```
+
+`train` runs [`nashgate/policy/train.py`](nashgate/policy/train.py)
+against the routing game defined by your config's backends/callers,
+printing progress (mean reward, mean entropy temperature) every ~10%
+of the run, and saves a checkpoint `LiveRouter.from_checkpoint()` and
+`nashgate bench --checkpoint` can both load. `inspect` prints each
+player's step/update count and current alpha from a saved checkpoint.
+
+This is the same training loop `nashgate bench` uses internally when
+no `--checkpoint` is given — now it's a first-class command instead of
+only reachable as a bench side effect. It's still the straightforward
+loop, not a tuned research pipeline: no LR schedule, no eval-during-training,
+no multi-seed runs. Good enough to get a real, non-random policy to
+point the gateway at; not a substitute for actually tuning one.
 
 ## The benchmark
 
@@ -258,8 +296,9 @@ nashgate/
 │   │   ├── networks.py       actor / critic architectures
 │   │   ├── replay_buffer.py
 │   │   ├── agent.py          single-player SAC agent
-│   │   └── router_policy.py  N independent players → one routing policy
-│   └── cli/       nashgate route / policy / bench
+│   │   ├── router_policy.py  N independent players → one routing policy
+│   │   └── train.py          the training loop — shared by `policy train` and `bench`
+│   └── cli/       nashgate route / policy train,inspect / bench
 ├── tests/
 └── docs/
     └── example.config.yaml
