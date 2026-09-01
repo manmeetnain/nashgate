@@ -56,13 +56,21 @@ training and serving score requests identically.
 The README's [Status](README.md#status) section is current as of the
 last update to this file. The gateway (streaming and non-streaming)
 has been manually spot-checked against a real live backend — see
-[README#verified-against-a-real-api](README.md#verified-against-a-real-api)
-— but that's one ad-hoc run, not automated regression coverage; there's
-no CI job that exercises a real API on every push (deliberately — that
-needs a funded key in CI secrets, a decision someone has to make).
-Automating that, and moving `nashgate policy train` past
-demo-scale (LR schedule, eval-during-training, multi-seed) are both
-open — check open issues before starting on something larger.
+[README#verified-against-a-real-api](README.md#verified-against-a-real-api).
+
+`.github/workflows/real-api-check.yml` and `tests/test_real_api.py`
+exist to automate that check on every push to main, but they're inert
+until a `NASHGATE_ANTHROPIC_TEST_KEY` repo secret is set — a funded
+Anthropic key, ideally dedicated to CI with its own spend cap, added
+via `gh secret set NASHGATE_ANTHROPIC_TEST_KEY --repo manmeetnain/nashgate`
+or the GitHub UI (Settings → Secrets and variables → Actions). Without
+it, `tests/test_real_api.py` just skips — locally too, so it never
+costs anything unless you also export the same variable name with a
+real key when running `pytest` yourself.
+
+Moving `nashgate policy train` past demo-scale (LR schedule,
+eval-during-training, multi-seed) is still open — check open issues
+before starting on something larger.
 
 ## License
 
