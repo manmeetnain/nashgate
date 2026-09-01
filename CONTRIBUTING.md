@@ -54,20 +54,33 @@ training and serving score requests identically.
 ## What's open
 
 The README's [Status](README.md#status) section is current as of the
-last update to this file. The gateway (streaming and non-streaming) is
-checked against a real, live Anthropic backend automatically —
-`.github/workflows/real-api-check.yml` runs `tests/test_real_api.py`
-on every push to main, using a `NASHGATE_ANTHROPIC_TEST_KEY` repo
-secret (a funded key dedicated to CI, ideally with its own spend cap).
-Without that secret set, the same tests just skip — locally too, so
-they never cost anything unless you export the same variable name with
-a real key when running `pytest` yourself. See
-[README#verified-against-a-real-api](README.md#verified-against-a-real-api)
-for what this actually caught the first time it ran.
+last update to this file. Closed since the project's early releases:
+the gateway (streaming and non-streaming) is checked against a real,
+live Anthropic backend automatically on every push to main
+(`.github/workflows/real-api-check.yml` + `tests/test_real_api.py`,
+gated on a `NASHGATE_ANTHROPIC_TEST_KEY` repo secret — skips cleanly,
+locally too, when that secret isn't set); and both real configs
+(`docs/example.config.yaml`, `docs/severe_contention.config.yaml`)
+have 10-seed multi-seed validation, not just single anecdotal runs —
+see [README#multi-seed-validation](README.md#multi-seed-validation).
 
-Moving `nashgate policy train` past demo-scale (LR schedule,
-eval-during-training, multi-seed) is still open — check open issues
-before starting on something larger.
+Still open:
+
+- **Real concurrent traffic.** Every claim about multiple callers
+  contending for the same backend — the actual thesis of the project —
+  has been proven in `MultiAgentRoutingEnv` (simulated) and validated
+  multi-seed, but never against genuinely concurrent real API traffic.
+  `real-api-check.yml` proves the gateway mechanism works against a
+  live backend one request at a time; it doesn't prove the
+  equilibrium-seeking behavior holds under real contention. This is
+  the one load-bearing claim still resting entirely on simulation.
+- **Tuning past demo-scale.** `nashgate policy train`'s multi-seed
+  results show the training loop converges reliably and
+  reproducibly — that's a different claim from "these are
+  well-tuned policies." No LR schedule, no eval-during-training, no
+  hyperparameter search has been done.
+
+Check open issues before starting on something larger.
 
 ## License
 
