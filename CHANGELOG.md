@@ -6,6 +6,14 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Link to the [Equilibrium Console](https://claude.ai/code/artifact/6b80bc14-797c-477c-8581-73495629e49a)
+  in README#multi-seed-validation — a live simulation of both the
+  light-load and severe-contention scenarios, animated, showing the
+  static router collapsing under contention while nashgate holds
+  steady.
+
 ## [0.6.0] - 2026-09-01
 
 ### Added

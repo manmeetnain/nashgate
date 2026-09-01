@@ -259,6 +259,11 @@ to win, and doesn't pretend otherwise when there isn't." Checkpoints
 `nashgate policy train --config <config> --seed N`, not worth carrying
 in git history.
 
+**See it happen, not just the tables** — [Equilibrium Console](https://claude.ai/code/artifact/6b80bc14-797c-477c-8581-73495629e49a)
+is a live simulation of both scenarios above: the same routing-game
+mechanics, animated, with the static router visibly collapsing under
+contention while nashgate holds steady.
+
 ## Training a policy
 
 ```bash
