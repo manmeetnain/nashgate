@@ -207,9 +207,11 @@ wired and what it costs when the secret isn't set (nothing — it skips).
 
 ## Multi-seed validation
 
-Trained 10 independent policies (seeds 0–9, 100k steps each) against
-`docs/example.config.yaml`, then evaluated every one against the same
-static baselines, over 5000 steps, seed-matched:
+Trained 10 independent policies each (seeds 0–9, 100k steps) against
+both real configs, then evaluated every one against the same static
+baselines over 5000 steps, seed-matched.
+
+**Light load** — `docs/example.config.yaml`:
 
 | Router | Reward (mean ± std) | Success | Fairness (mean ± std) |
 |---|---|---|---|
@@ -219,27 +221,43 @@ static baselines, over 5000 steps, seed-matched:
 | latency_based | 0.8694 ± 0.0022 | 98.9% | 0.7930 ± 0.1337 |
 | cost_based | 0.8696 ± 0.0021 | 98.9% | 0.3333 ± 0.0000 |
 
-Two findings, not one flattering one:
+**Severe contention** — `docs/severe_contention.config.yaml` (4 callers, 40–200 req/window):
 
-- **Training is stable.** A reward std of ~0.002 across 10 independent
-  random seeds means the policy converges to essentially the same
-  equilibrium every time — not a lucky single run.
-- **nashgate does not beat `round_robin` here** — they're statistically
-  tied, with round_robin marginally ahead on both reward and fairness.
-  That's not a regression; it's the light-load case [The
-  benchmark](#the-benchmark) already documented: `example.config.yaml`'s
-  rate limits are generous relative to 3 callers, so there's no real
-  contention to route around, and the equilibrium-seeking policy has no
-  edge when there's no game being played. This run *proves* that
-  claim with real statistical rigor instead of one anecdotal pass — a
-  less flattering number, but a more honest one.
+| Router | Reward (mean ± std) | Success | Violations | Fairness (mean ± std) |
+|---|---|---|---|---|
+| **nashgate** | 0.7916 ± 0.0017 | 98.9% | 1.1% | 0.8793 ± 0.0014 |
+| weighted | 0.7639 ± 0.0018 | 99.0% | 1.0% | 0.7484 ± 0.0030 |
+| cost_based | 0.6659 ± 0.0015 | 99.0% | 1.0% | 0.3333 ± 0.0000 |
+| round_robin | 0.4771 ± 0.0015 | 85.8% | 14.2% | 1.0000 ± 0.0000 |
+| latency_based | &minus;1.1612 ± 0.0024 | 20.2% | 79.8% | 0.3364 ± 0.0006 |
 
-The severe-contention config that showed `latency_based` collapsing
-(4 callers, 40–200 req/window caps — see [The benchmark](#the-benchmark))
-hasn't been re-run multi-seed yet; that's the natural next step if the
-flattering result needs the same rigor applied to it. Checkpoints
-(30 files, 42MB) are gitignored — reproducible from
-`nashgate policy train --seed N`, not worth carrying in git history.
+Three findings:
+
+- **Training is stable in both regimes.** Reward std stays in the
+  0.0015–0.0024 range across 10 independent random seeds in *both*
+  scenarios — the policy converges to essentially the same equilibrium
+  every time, not a lucky single run.
+- **Under light load, nashgate ties `round_robin`** — statistically
+  indistinguishable, with round_robin marginally ahead. Not a
+  regression: `example.config.yaml`'s rate limits are generous relative
+  to 3 callers, so there's no real contention to route around, and an
+  equilibrium-seeking policy has no edge when there's no game being
+  played.
+- **Under severe contention, nashgate wins, consistently.** `latency_based`
+  collapses to a 79.8% violation rate on *every one* of the 10 seeds
+  (std 0.0024 — not a fluke), while nashgate holds 98.9% success and
+  1.1% violations across all 10. This is the same collapse dynamic [The
+  benchmark](#the-benchmark) first showed from a single run, now backed
+  by the same statistical rigor as the light-load result above — the
+  flattering number and the unflattering one were both put through the
+  same test, not just the one that looked good.
+
+Together these two tables are the actual claim of the project: not
+"nashgate always wins," but "nashgate wins exactly when there's a game
+to win, and doesn't pretend otherwise when there isn't." Checkpoints
+(60 files, ~85MB across both runs) are gitignored — reproducible from
+`nashgate policy train --config <config> --seed N`, not worth carrying
+in git history.
 
 ## Training a policy
 

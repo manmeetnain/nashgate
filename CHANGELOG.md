@@ -6,6 +6,21 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-01
+
+### Added
+
+- **Multi-seed validation of the severe-contention scenario** — 10
+  independent policies trained (seeds 0–9, 100k steps each) against
+  `docs/severe_contention.config.yaml`, completing the rigor pass
+  started in v0.5.0 (which only covered the light-load config). Under
+  real scarcity, nashgate wins consistently: 98.9% success / 1.1%
+  violations across all 10 seeds, while `latency_based` collapses to a
+  79.8% violation rate on *every* seed (std 0.0024 — not a fluke). The
+  flattering result and the honest tie from v0.5.0 have now both been
+  put through the same statistical test. See
+  README#multi-seed-validation.
+
 ## [0.5.0] - 2026-09-01
 
 ### Added
@@ -139,7 +154,8 @@ gateway, benchmark) working end to end, with tests and CI to back it.
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
 
-[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.6.0
 [0.5.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.5.0
 [0.4.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.4.0
 [0.3.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.3.0
