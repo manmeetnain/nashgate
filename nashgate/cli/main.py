@@ -42,10 +42,68 @@ def route(
     uvicorn.run(fastapi_app, host=host, port=port)
 
 
-@app.command()
-def policy() -> None:
-    """Inspect or train the equilibrium-seeking router."""
-    typer.echo("nashgate policy: not implemented yet")
+policy_app = typer.Typer(help="Train or inspect the equilibrium-seeking router.")
+app.add_typer(policy_app, name="policy")
+
+
+def _load_backend_and_caller_configs(config: str):
+    from nashgate.gateway.backends import backends_from_dicts
+    from nashgate.gateway.callers import callers_from_dicts
+    from nashgate.gateway.config import load_config
+
+    cfg = load_config(config)
+    backend_configs = [b.routing_config for b in backends_from_dicts(cfg["backends"])]
+    caller_configs = [c.config for c in callers_from_dicts(cfg["callers"])]
+    return backend_configs, caller_configs
+
+
+@policy_app.command("train")
+def policy_train(
+    config: str = typer.Option(
+        ..., "--config", "-c", help="Path to config YAML (same format as `route`; connection fields are ignored)"
+    ),
+    out: str = typer.Option(..., "--out", "-o", help="Directory to save the trained checkpoint into"),
+    steps: int = typer.Option(20_000, help="Training steps"),
+    seed: int = typer.Option(0, help="Random seed"),
+) -> None:
+    """Train a fresh policy against the routing game and save a checkpoint."""
+    from nashgate.policy.train import train_policy
+
+    backend_configs, caller_configs = _load_backend_and_caller_configs(config)
+
+    def report(step: int, total: int, stats: dict) -> None:
+        typer.echo(
+            f"  step {step:>7}/{total}  mean_reward={stats['mean_reward']:+.3f}  mean_alpha={stats['mean_alpha']:.3f}"
+        )
+
+    typer.echo(f"training {len(caller_configs)} players x {len(backend_configs)} backends for {steps} steps...")
+    policy = train_policy(
+        backend_configs, caller_configs, steps=steps, seed=seed,
+        on_progress=report, progress_every=max(1, steps // 10),
+    )
+    policy.save(out)
+    typer.echo(f"saved checkpoint to {out}")
+
+
+@policy_app.command("inspect")
+def policy_inspect(
+    config: str = typer.Option(..., "--config", "-c", help="Config YAML — used to derive obs_dim/n_backends/n_players"),
+    checkpoint: str = typer.Option(..., "--checkpoint", help="Checkpoint directory to inspect"),
+) -> None:
+    """Print per-player training stats from a saved checkpoint."""
+    from nashgate.env import obs_dim
+    from nashgate.policy import NashEquilibriumRouter
+
+    backend_configs, caller_configs = _load_backend_and_caller_configs(config)
+
+    policy = NashEquilibriumRouter(
+        n_players=len(caller_configs), obs_dim=obs_dim(len(backend_configs)), n_backends=len(backend_configs)
+    )
+    policy.load(checkpoint)
+
+    typer.echo(f"{'player':<8} {'steps':>10} {'updates':>10} {'alpha':>8}")
+    for pid, agent in policy.agents.items():
+        typer.echo(f"{pid:<8} {agent.total_steps:>10} {agent.updates:>10} {agent.alpha:>8.4f}")
 
 
 @app.command()
@@ -61,14 +119,9 @@ def bench(
     """Replay traffic and compare against static routing."""
     from nashgate.bench import compare_routers, format_table, train_policy
     from nashgate.env import obs_dim
-    from nashgate.gateway.backends import backends_from_dicts
-    from nashgate.gateway.callers import callers_from_dicts
-    from nashgate.gateway.config import load_config
     from nashgate.policy import NashEquilibriumRouter
 
-    cfg = load_config(config)
-    backend_configs = [b.routing_config for b in backends_from_dicts(cfg["backends"])]
-    caller_configs = [c.config for c in callers_from_dicts(cfg["callers"])]
+    backend_configs, caller_configs = _load_backend_and_caller_configs(config)
 
     if checkpoint:
         policy = NashEquilibriumRouter(
