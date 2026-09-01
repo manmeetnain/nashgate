@@ -6,6 +6,8 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-01
+
 ### Verified
 
 - The gateway, streaming and non-streaming, manually verified against
@@ -108,6 +110,7 @@ gateway, benchmark) working end to end, with tests and CI to back it.
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
 
-[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.3.0
 [0.2.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.2.0
 [0.1.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.1.0
