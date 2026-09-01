@@ -174,6 +174,32 @@ never baked into the image), and publishes port 8000. Point it at your
 own config by editing the volume mount. Also build-and-run verified —
 `GET /healthz` returned `200` and the container reported `healthy`.
 
+## Verified against a real API
+
+Everything above was tested against simulated traffic or mocked
+backends — real, but not the same claim as "works against an actual
+model provider." As of 2026-09-01, it does: a real `nashgate route`
+process was pointed at Anthropic's OpenAI-compatible endpoint
+(`https://api.anthropic.com/v1`, model `claude-haiku-4-5-20251001`)
+and hit with real requests, no mocking anywhere in the path.
+
+- **Non-streaming** — real response, real `usage` (18 prompt / 12
+  completion tokens), real latency (787.5ms), correctly costed and
+  scored (`"nashgate": {"cost": 3e-05, "reward": 0.9685}`).
+- **Streaming** — real incremental SSE chunks passed through live
+  (`"Blue"` then `" is the color of the sky and ocean."` arriving as
+  separate `data:` events, not buffered). Without `stream_options:
+  {"include_usage": true}` in the request, no chunk carried a `usage`
+  field, and the gateway correctly fell back to the token-count
+  estimate — exactly the documented fallback behavior. Re-run *with*
+  that flag set: the final chunk included real usage
+  (13 prompt / 5 completion tokens) and it was extracted correctly.
+
+This was one manual verification run, not an automated one — there's
+no CI job that exercises a real API on every push (that needs a funded
+key in CI secrets, a decision that hasn't been made). See
+[CONTRIBUTING.md#whats-open](CONTRIBUTING.md#whats-open).
+
 ## Training a policy
 
 ```bash

@@ -6,6 +6,18 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Verified
+
+- The gateway, streaming and non-streaming, manually verified against
+  a real live backend for the first time — Anthropic's OpenAI-compatible
+  endpoint, model `claude-haiku-4-5-20251001`, no mocking anywhere in
+  the path. Real usage/latency/cost/reward on the non-streaming path;
+  real incremental SSE passthrough on the streaming path, including
+  confirming the `stream_options: {include_usage: true}` usage-extraction
+  fallback behaves exactly as documented (falls back to the token
+  estimate when absent, extracts real usage when present). One manual
+  run, not automated CI coverage — see README#verified-against-a-real-api.
+
 ## [0.2.0] - 2026-09-01
 
 Closes two of the three items that were open after 0.1.0 — real CLI
