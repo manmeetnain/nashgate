@@ -1,0 +1,57 @@
+# Severe-contention scenario — rate limits tight relative to demand
+# (4 callers, backends capped at 40-200 req/window). This is the
+# config referenced in README.md#the-benchmark's "under real scarcity"
+# numbers (latency_based collapsing to a 79% violation rate) and in
+# README.md#multi-seed-validation as the flattering result still
+# waiting on the same multi-seed rigor applied to example.config.yaml.
+#
+# Connection fields (base_url/api_key_env/model) are placeholders —
+# this config is for `nashgate policy train` / `nashgate bench`
+# (simulated game only), never for `nashgate route` against a real
+# backend.
+
+policy_checkpoint: null
+explore: false
+online_learning: false
+
+backends:
+  - name: fast-expensive-tight
+    base_url: https://example.invalid/v1
+    api_key_env: NASHGATE_UNUSED_KEY
+    model: unused
+    base_latency_ms: 300
+    latency_jitter_ms: 50
+    cost_per_1k_tokens: 0.01
+    rate_limit_per_window: 40
+
+  - name: mid-tight
+    base_url: https://example.invalid/v1
+    api_key_env: NASHGATE_UNUSED_KEY
+    model: unused
+    base_latency_ms: 600
+    latency_jitter_ms: 80
+    cost_per_1k_tokens: 0.002
+    rate_limit_per_window: 100
+
+  - name: cheap-slow-loose
+    base_url: https://example.invalid/v1
+    api_key_env: NASHGATE_UNUSED_KEY
+    model: unused
+    base_latency_ms: 1200
+    latency_jitter_ms: 150
+    cost_per_1k_tokens: 0.0005
+    rate_limit_per_window: 200
+
+callers:
+  - name: caller-a
+    sla_latency_ms: 2000
+    cost_budget_per_window: 1.0
+  - name: caller-b
+    sla_latency_ms: 2000
+    cost_budget_per_window: 1.0
+  - name: caller-c
+    sla_latency_ms: 2000
+    cost_budget_per_window: 1.0
+  - name: caller-d
+    sla_latency_ms: 2000
+    cost_budget_per_window: 1.0
