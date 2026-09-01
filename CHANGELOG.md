@@ -2,10 +2,14 @@
 
 All notable changes to this project are documented here. Format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
-versioning follows [Semantic Versioning](https://semver.org/) once
-there's a tagged release — everything so far is pre-release, on `main`.
+versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-09-01
+
+First tagged release — the full pipeline (policy, game, router,
+gateway, benchmark) working end to end, with tests and CI to back it.
 
 ### Added
 
@@ -62,3 +66,6 @@ there's a tagged release — everything so far is pre-release, on `main`.
 - Modernized legacy `typing.Dict`/`List`/`Optional` usage to built-in
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
+
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.1.0
