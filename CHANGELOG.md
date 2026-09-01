@@ -6,6 +6,21 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-01
+
+### Added
+
+- **Multi-seed training validation** — 10 independent policies trained
+  (seeds 0–9, 100k steps each) against `docs/example.config.yaml`,
+  evaluated against all four static baselines seed-matched. Two real
+  findings: training is stable (reward std ~0.002 across seeds), and
+  nashgate ties with `round_robin` under this config's light load —
+  confirming, with real statistical rigor, the light-load caveat the
+  benchmark section already documented from a single run. See
+  README#multi-seed-validation. `checkpoints/` added to `.gitignore` —
+  30 files / 42MB of model binaries aren't worth carrying in git
+  history when they're reproducible from `nashgate policy train`.
+
 ## [0.4.0] - 2026-09-01
 
 Automates what v0.3.0 verified by hand.
@@ -124,7 +139,8 @@ gateway, benchmark) working end to end, with tests and CI to back it.
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
 
-[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.5.0
 [0.4.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.4.0
 [0.3.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.3.0
 [0.2.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.2.0

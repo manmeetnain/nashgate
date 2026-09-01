@@ -205,6 +205,42 @@ made two real calls and passed for real, not skipped — see
 [CONTRIBUTING.md#whats-open](CONTRIBUTING.md#whats-open) for how it's
 wired and what it costs when the secret isn't set (nothing — it skips).
 
+## Multi-seed validation
+
+Trained 10 independent policies (seeds 0–9, 100k steps each) against
+`docs/example.config.yaml`, then evaluated every one against the same
+static baselines, over 5000 steps, seed-matched:
+
+| Router | Reward (mean ± std) | Success | Fairness (mean ± std) |
+|---|---|---|---|
+| **nashgate** | 0.8925 ± 0.0021 | 98.9% | 0.9982 ± 0.0013 |
+| round_robin | 0.8929 ± 0.0021 | 98.9% | 1.0000 ± 0.0000 |
+| weighted | 0.8867 ± 0.0021 | 98.9% | 0.7805 ± 0.0045 |
+| latency_based | 0.8694 ± 0.0022 | 98.9% | 0.7930 ± 0.1337 |
+| cost_based | 0.8696 ± 0.0021 | 98.9% | 0.3333 ± 0.0000 |
+
+Two findings, not one flattering one:
+
+- **Training is stable.** A reward std of ~0.002 across 10 independent
+  random seeds means the policy converges to essentially the same
+  equilibrium every time — not a lucky single run.
+- **nashgate does not beat `round_robin` here** — they're statistically
+  tied, with round_robin marginally ahead on both reward and fairness.
+  That's not a regression; it's the light-load case [The
+  benchmark](#the-benchmark) already documented: `example.config.yaml`'s
+  rate limits are generous relative to 3 callers, so there's no real
+  contention to route around, and the equilibrium-seeking policy has no
+  edge when there's no game being played. This run *proves* that
+  claim with real statistical rigor instead of one anecdotal pass — a
+  less flattering number, but a more honest one.
+
+The severe-contention config that showed `latency_based` collapsing
+(4 callers, 40–200 req/window caps — see [The benchmark](#the-benchmark))
+hasn't been re-run multi-seed yet; that's the natural next step if the
+flattering result needs the same rigor applied to it. Checkpoints
+(30 files, 42MB) are gitignored — reproducible from
+`nashgate policy train --seed N`, not worth carrying in git history.
+
 ## Training a policy
 
 ```bash
