@@ -2,6 +2,7 @@
 
 [![tests](https://github.com/manmeetnain/nashgate/actions/workflows/tests.yml/badge.svg)](https://github.com/manmeetnain/nashgate/actions/workflows/tests.yml)
 [![docker](https://github.com/manmeetnain/nashgate/actions/workflows/docker.yml/badge.svg)](https://github.com/manmeetnain/nashgate/actions/workflows/docker.yml)
+[![real API check](https://github.com/manmeetnain/nashgate/actions/workflows/real-api-check.yml/badge.svg)](https://github.com/manmeetnain/nashgate/actions/workflows/real-api-check.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ```
@@ -195,10 +196,14 @@ and hit with real requests, no mocking anywhere in the path.
   that flag set: the final chunk included real usage
   (13 prompt / 5 completion tokens) and it was extracted correctly.
 
-This was one manual verification run, not an automated one — there's
-no CI job that exercises a real API on every push (that needs a funded
-key in CI secrets, a decision that hasn't been made). See
-[CONTRIBUTING.md#whats-open](CONTRIBUTING.md#whats-open).
+That first pass was a manual run. It's automated now:
+[`.github/workflows/real-api-check.yml`](.github/workflows/real-api-check.yml)
+runs `tests/test_real_api.py` — the same streaming and non-streaming
+checks, against the same real backend — on every push to main, using a
+funded `NASHGATE_ANTHROPIC_TEST_KEY` repo secret. First automated run
+made two real calls and passed for real, not skipped — see
+[CONTRIBUTING.md#whats-open](CONTRIBUTING.md#whats-open) for how it's
+wired and what it costs when the secret isn't set (nothing — it skips).
 
 ## Training a policy
 

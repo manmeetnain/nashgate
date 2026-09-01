@@ -6,6 +6,20 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-01
+
+Automates what v0.3.0 verified by hand.
+
+### Added
+
+- **`.github/workflows/real-api-check.yml`** + **`tests/test_real_api.py`**
+  — the gateway (streaming and non-streaming) is now checked against a
+  real, live Anthropic backend on every push to main, via a funded
+  `NASHGATE_ANTHROPIC_TEST_KEY` repo secret. Without that secret set,
+  the same tests skip cleanly — locally too, so this never costs
+  anything by accident. First automated run made two real calls and
+  passed. `workflow_dispatch` included for on-demand runs.
+
 ## [0.3.0] - 2026-09-01
 
 ### Verified
@@ -110,7 +124,8 @@ gateway, benchmark) working end to end, with tests and CI to back it.
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
 
-[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.4.0
 [0.3.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.3.0
 [0.2.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.2.0
 [0.1.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.1.0
