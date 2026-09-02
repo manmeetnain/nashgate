@@ -1,6 +1,6 @@
 [project]
 name = "nashgate"
-version = "0.6.0"
+version = "0.7.0"
 description = "LLM/agent gateway that routes under contention via Nash-equilibrium-seeking multi-agent RL"
 readme = "README.md"
 license = "MIT"

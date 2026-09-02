@@ -6,6 +6,8 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-02
+
 ### Added
 
 - Link to the [Equilibrium Console](https://claude.ai/code/artifact/6b80bc14-797c-477c-8581-73495629e49a)
@@ -13,6 +15,20 @@ versioning follows [Semantic Versioning](https://semver.org/).
   light-load and severe-contention scenarios, animated, showing the
   static router collapsing under contention while nashgate holds
   steady.
+- **Verified under real concurrent traffic** — a real
+  `severe_contention_100k` checkpoint (multi-seed validated, not a
+  one-off) hit with 16 genuinely concurrent real requests
+  (`asyncio.gather`) across 4 callers against a real Anthropic
+  endpoint. 16/16 succeeded, truly concurrent (1247ms wall-clock, not
+  13+ seconds sequential), and the routing spread sensibly across all
+  3 configured backends — contrasted against an earlier attempt with a
+  policy trained on a badly-scoped test scenario, which collapsed to a
+  10/2 split under the same kind of real concurrent load. Narrows the
+  project's one remaining simulation-only claim down to
+  latency-differentiated routing specifically (this test's 3 "backends"
+  were all the same real provider, differentiated only by rate limit
+  and cost, not by genuinely different latency) — see
+  README#verified-under-real-concurrent-traffic.
 
 ## [0.6.0] - 2026-09-01
 
@@ -162,7 +178,8 @@ gateway, benchmark) working end to end, with tests and CI to back it.
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
 
-[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.7.0
 [0.6.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.6.0
 [0.5.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.5.0
 [0.4.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.4.0

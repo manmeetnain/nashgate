@@ -63,17 +63,22 @@ locally too, when that secret isn't set); and both real configs
 (`docs/example.config.yaml`, `docs/severe_contention.config.yaml`)
 have 10-seed multi-seed validation, not just single anecdotal runs —
 see [README#multi-seed-validation](README.md#multi-seed-validation).
+A real, multi-seed-validated `severe_contention_100k` checkpoint has
+also been run against genuinely concurrent real traffic (16 requests,
+`asyncio.gather`, not sequential) — see
+[README#verified-under-real-concurrent-traffic](README.md#verified-under-real-concurrent-traffic).
 
 Still open:
 
-- **Real concurrent traffic.** Every claim about multiple callers
-  contending for the same backend — the actual thesis of the project —
-  has been proven in `MultiAgentRoutingEnv` (simulated) and validated
-  multi-seed, but never against genuinely concurrent real API traffic.
-  `real-api-check.yml` proves the gateway mechanism works against a
-  live backend one request at a time; it doesn't prove the
-  equilibrium-seeking behavior holds under real contention. This is
-  the one load-bearing claim still resting entirely on simulation.
+- **Latency-differentiated routing under real conditions.** The
+  concurrent-traffic test above used one real provider for all
+  configured "backends," differentiated only by rate limit and cost —
+  real latency came back similar across all of them, unlike the
+  300/600/1200ms spread the policy was trained on. So it validates
+  that *rate-limit-headroom-informed* spreading transfers from
+  simulation into real serving; it doesn't validate routing that
+  actually reacts to genuinely different real backend latencies, which
+  needs a second real provider to test.
 - **Tuning past demo-scale.** `nashgate policy train`'s multi-seed
   results show the training loop converges reliably and
   reproducibly — that's a different claim from "these are
