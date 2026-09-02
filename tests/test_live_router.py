@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from nashgate.router.live_router import LiveRouter
+from nashgate.router.live_router import AllBackendsRateLimitedError, LiveRouter
 
 
 def test_select_backend_returns_valid_choice(backend_configs, caller_configs):
@@ -71,3 +71,72 @@ def test_from_checkpoint_loads_a_saved_policy(tmp_path, backend_configs, caller_
     served = LiveRouter.from_checkpoint(str(tmp_path), backend_configs, caller_configs, explore=False)
     for pid in trained.policy.agents:
         assert served.policy.agents[pid].alpha == pytest.approx(trained.policy.agents[pid].alpha)
+
+
+def _rate_limit(router, backend_id):
+    backend = router.backends[backend_id]
+    backend.requests_this_window = backend.config.rate_limit_per_window
+
+
+def test_enforce_rate_limit_is_a_noop_when_the_backend_has_headroom(backend_configs, caller_configs):
+    router = LiveRouter(backend_configs, caller_configs, explore=False)
+    assert router._enforce_rate_limit(0) == 0
+
+
+def test_enforce_rate_limit_reroutes_to_an_available_backend(backend_configs, caller_configs):
+    router = LiveRouter(backend_configs, caller_configs, explore=False)
+    _rate_limit(router, 0)
+    result = router._enforce_rate_limit(0)
+    assert result != 0
+    assert not router.backends[result].is_rate_limited()
+
+
+def test_enforce_rate_limit_picks_the_backend_with_most_headroom(backend_configs, caller_configs):
+    router = LiveRouter(backend_configs, caller_configs, explore=False)
+    _rate_limit(router, 0)
+    # backend 1's rate_limit_per_window=100, backend 2's =200 (see conftest) —
+    # push backend 1 to 90% used so backend 2 has strictly more headroom.
+    router.backends[1].requests_this_window = 90
+    assert router._enforce_rate_limit(0) == 2
+
+
+def test_enforce_rate_limit_raises_when_every_backend_is_exhausted(backend_configs, caller_configs):
+    router = LiveRouter(backend_configs, caller_configs, explore=False)
+    for i in range(len(backend_configs)):
+        _rate_limit(router, i)
+    with pytest.raises(AllBackendsRateLimitedError):
+        router._enforce_rate_limit(0)
+
+
+def test_select_backend_raises_when_every_backend_is_exhausted(backend_configs, caller_configs):
+    router = LiveRouter(backend_configs, caller_configs, explore=True)
+    for i in range(len(backend_configs)):
+        _rate_limit(router, i)
+    with pytest.raises(AllBackendsRateLimitedError):
+        router.select_backend(caller_id=0, request_tokens=500)
+
+
+def test_select_backend_routes_to_the_one_available_backend_regardless_of_policy_choice(
+    backend_configs, caller_configs
+):
+    router = LiveRouter(backend_configs, caller_configs, explore=True)
+    _rate_limit(router, 0)
+    _rate_limit(router, 1)
+    # backend 2 is the only one left with headroom, no matter what the
+    # (untrained, effectively random) policy would have preferred.
+    routed = router.select_backend(caller_id=0, request_tokens=500)
+    assert routed.backend_id == 2
+    assert router.backends[2].in_flight == 1
+
+
+def test_rerouted_backend_id_is_what_report_result_scores_and_stores(backend_configs, caller_configs):
+    router = LiveRouter(backend_configs, caller_configs, explore=True, online_learning=True)
+    _rate_limit(router, 0)
+    _rate_limit(router, 1)
+    routed = router.select_backend(caller_id=0, request_tokens=500)
+    agent = router.policy.agents[0]
+
+    router.report_result(routed, latency_ms=250.0, cost=0.01, success=True)
+
+    stored_action = agent.buffer.buffer[-1][1]
+    assert stored_action == routed.backend_id == 2

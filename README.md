@@ -95,6 +95,21 @@ end-to-end: train against `MultiAgentRoutingEnv` → `policy.save()` →
 `LiveRouter.from_checkpoint()` → `select_backend()` / `report_result()`
 on synthetic live traffic.
 
+**Rate limits are enforced here, deliberately not in the training env.**
+`MultiAgentRoutingEnv` lets an agent pick a rate-limited backend and
+penalizes it in the reward — that's how the policy *learns* to avoid
+doing it. `select_backend()` adds a hard safety net on top of that
+learned preference: if the policy picks a backend that's already out
+of budget for the window, the request is rerouted to whichever
+available backend has the most headroom instead of actually
+overloading a real one. If every backend is exhausted,
+`select_backend()` raises `AllBackendsRateLimitedError`, which the
+gateway turns into a proper `429` rather than silently dropping or
+crashing. Verified end-to-end, not just in unit tests: draining two
+2-request-limit backends through the real `select_backend()` /
+`report_result()` flow correctly triggers the fallback on requests 3–4
+and raises on request 5.
+
 ## The gateway
 
 `nashgate/gateway/` is the OpenAI-compatible proxy — the thing an

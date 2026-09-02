@@ -50,6 +50,21 @@ def test_missing_caller_header_is_rejected(client):
     assert r.status_code == 422
 
 
+def test_all_backends_rate_limited_returns_429(app, backend_configs):
+    client = TestClient(app)
+    live_router = app.state.live_router
+    for backend in live_router.backends:
+        backend.requests_this_window = backend.config.rate_limit_per_window
+
+    r = client.post(
+        "/v1/chat/completions",
+        json={"messages": [{"role": "user", "content": "hi"}]},
+        headers={"X-Nashgate-Caller": "coding-agent"},
+    )
+    assert r.status_code == 429
+    assert "rate limit" in r.json()["detail"]["error"]["message"]
+
+
 OK_RESULT = ForwardResult(
     ok=True, status_code=200, latency_ms=250.0,
     body={"id": "chatcmpl-1", "choices": [{"message": {"role": "assistant", "content": "hi"}}],

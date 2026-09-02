@@ -1,3 +1,3 @@
-from nashgate.router.live_router import LiveRouter, RoutedRequest
+from nashgate.router.live_router import AllBackendsRateLimitedError, LiveRouter, RoutedRequest
 
-__all__ = ["LiveRouter", "RoutedRequest"]
+__all__ = ["LiveRouter", "RoutedRequest", "AllBackendsRateLimitedError"]

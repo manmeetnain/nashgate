@@ -15,6 +15,16 @@ the *next* request already sees this one's effect on load, and — if
 online_learning is on — pushes the transition into that agent's
 replay buffer and runs an update step, so the policy keeps adapting
 to real traffic instead of freezing at whatever it learned offline.
+
+Rate limits are enforced here, deliberately not in the training env.
+MultiAgentRoutingEnv lets an agent pick a rate-limited backend and
+penalizes it in the reward — that's how the policy learns to avoid
+doing it. Live serving adds a hard safety net on top of that learned
+preference: if the policy picks a backend that's already out of
+budget for the window anyway (an unexplored state, a stale policy,
+whatever), the request gets rerouted to an available backend instead
+of actually overloading a real one. See select_backend()'s docstring
+for what happens when every backend is exhausted.
 """
 
 import time
@@ -27,6 +37,13 @@ from nashgate.env.caller_state import CallerConfig, CallerRuntime
 from nashgate.env.features import OWN_CONCURRENCY_CAP, build_local_obs, build_shared_obs, obs_dim
 from nashgate.env.reward import compute_reward
 from nashgate.policy import NashEquilibriumRouter
+
+
+class AllBackendsRateLimitedError(Exception):
+    """Every configured backend is out of budget for the current window.
+    There's no safe backend left to reroute to — the caller (typically
+    the gateway) should surface this as a definitive "no capacity"
+    response (e.g. HTTP 429), not swallow it."""
 
 
 @dataclass
@@ -88,6 +105,8 @@ class LiveRouter:
             self._window_start = time.monotonic()
 
     def select_backend(self, caller_id: int, request_tokens: int) -> RoutedRequest:
+        """Raises AllBackendsRateLimitedError if every backend is out of
+        budget for the current window — see module docstring."""
         self._maybe_reset_window()
         caller = self.callers[caller_id]
         caller.pending_tokens = request_tokens
@@ -96,13 +115,35 @@ class LiveRouter:
         obs = build_local_obs(caller, shared)
 
         backend_id = self.policy.agents[caller_id].select_action(obs, explore=self.explore)
+        backend_id = self._enforce_rate_limit(backend_id)
 
         backend = self.backends[backend_id]
         backend.in_flight += 1
         backend.requests_this_window += 1
         caller.inflight = min(int(OWN_CONCURRENCY_CAP), caller.inflight + 1)
 
+        # backend_id here is the one actually used, not necessarily the
+        # policy's first choice — that's what report_result() must score
+        # and, under online learning, what gets stored as the taken
+        # action. SAC's off-policy update only needs the real (s, a, r,
+        # s') tuple, not that a matches the network's own preference, so
+        # this stays correct even when the rate-limit fallback overrode it.
         return RoutedRequest(caller_id=caller_id, backend_id=backend_id, obs=obs)
+
+    def _enforce_rate_limit(self, backend_id: int) -> int:
+        if not self.backends[backend_id].is_rate_limited():
+            return backend_id
+
+        available = [
+            (i, b.rate_limit_headroom())
+            for i, b in enumerate(self.backends)
+            if not b.is_rate_limited()
+        ]
+        if not available:
+            raise AllBackendsRateLimitedError(
+                "every configured backend is at its rate limit for the current window"
+            )
+        return max(available, key=lambda pair: pair[1])[0]
 
     def report_result(
         self, routed: RoutedRequest, latency_ms: float, cost: float, success: bool

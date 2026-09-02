@@ -28,7 +28,7 @@ from nashgate.gateway.backends import GatewayBackend
 from nashgate.gateway.callers import CALLER_HEADER, CallerRegistry, NamedCaller
 from nashgate.gateway.proxy import forward_chat_completion, iter_stream_chunks, open_chat_completion_stream
 from nashgate.gateway.tokens import estimate_request_tokens, total_tokens_from_usage
-from nashgate.router import LiveRouter
+from nashgate.router import AllBackendsRateLimitedError, LiveRouter
 
 
 def create_app(
@@ -80,7 +80,10 @@ def create_app(
         messages = body.get("messages", [])
         request_tokens = estimate_request_tokens(messages)
 
-        routed = live_router.select_backend(caller_id, request_tokens)
+        try:
+            routed = live_router.select_backend(caller_id, request_tokens)
+        except AllBackendsRateLimitedError as exc:
+            raise HTTPException(status_code=429, detail={"error": {"message": str(exc)}})
         backend = backends[routed.backend_id]
 
         if body.get("stream"):

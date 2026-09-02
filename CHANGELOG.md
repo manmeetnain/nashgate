@@ -6,6 +6,30 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-02
+
+### Changed
+
+- **Rate limits are now enforced in live serving, not just advisory.**
+  Previously `LiveRouter.select_backend()` exposed rate-limit headroom
+  as an observation feature but never blocked a policy from actually
+  routing to an exhausted backend — a gap found and confirmed by code
+  inspection during the v0.7.0 concurrent-traffic work. Now: if the
+  policy's chosen backend is out of budget for the window,
+  `select_backend()` reroutes to whichever available backend has the
+  most headroom instead of overloading it; if every backend is
+  exhausted, it raises `AllBackendsRateLimitedError`, which the
+  gateway converts to a proper `429` instead of silently dropping or
+  crashing. The training env (`MultiAgentRoutingEnv`) is deliberately
+  unchanged — it still lets an agent pick a rate-limited backend and
+  penalizes it in the reward, since that's how the policy learns to
+  avoid doing it; live serving adds a hard safety net on top of that
+  learned preference, it doesn't replace it. See
+  README#the-router. 8 new tests (`tests/test_live_router.py`,
+  `tests/test_gateway_app.py`); also verified end-to-end outside the
+  test suite by draining two rate-limited backends through the real
+  `select_backend()`/`report_result()` flow.
+
 ## [0.7.0] - 2026-09-02
 
 ### Added
@@ -178,7 +202,8 @@ gateway, benchmark) working end to end, with tests and CI to back it.
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
 
-[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.8.0
 [0.7.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.7.0
 [0.6.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.6.0
 [0.5.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.5.0
