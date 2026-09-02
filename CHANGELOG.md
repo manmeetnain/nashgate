@@ -6,6 +6,38 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-02
+
+First stable release. Not a version-number formality — every major
+claim the project makes has real, verified evidence behind it, not
+just simulation or a single anecdotal run:
+
+- **The algorithm.** Nash equilibrium-seeking multi-agent SAC, trained
+  and multi-seed validated (10 independent seeds each) on both a
+  light-load and a severe-contention scenario. Under scarcity,
+  nashgate wins consistently (98.9% success vs. 20.2% for the
+  latency-greedy baseline, every seed); under light load it honestly
+  ties a plain round-robin baseline, because there's no contention to
+  route around — the flattering result and the unflattering one both
+  got the same statistical rigor.
+- **The gateway.** OpenAI-compatible, streaming and non-streaming,
+  checked against a real live backend automatically on every push to
+  main via CI, not just once by hand.
+- **Concurrency.** A real, multi-seed-validated policy verified against
+  genuinely concurrent real traffic (`asyncio.gather`, not sequential)
+  — 16/16 succeeded, true parallelism confirmed by wall-clock timing.
+- **Rate limits are enforced**, not just advisory — a real gap found
+  during the concurrency work, fixed, and tested.
+- **Latency-differentiated routing** verified against two genuinely
+  different real providers (Anthropic + OpenAI) — 20/20 requests
+  routed to the real faster one, including an honest account of a
+  first attempt that didn't work and why.
+
+What 1.0.0 does *not* claim: `nashgate policy train`'s policies are
+stable and reproducible, not tuned — no LR schedule, no
+eval-during-training, no hyperparameter search has been done. That
+stays open; see `CONTRIBUTING.md#what's-open`.
+
 ## [0.9.0] - 2026-09-02
 
 ### Added
@@ -220,7 +252,8 @@ gateway, benchmark) working end to end, with tests and CI to back it.
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
 
-[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/manmeetnain/nashgate/releases/tag/v1.0.0
 [0.9.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.9.0
 [0.8.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.8.0
 [0.7.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.7.0

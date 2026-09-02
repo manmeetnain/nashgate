@@ -448,11 +448,20 @@ Both run in CI on every push and PR to `main` —
 
 ## Status
 
-- [x] Nash-SAC policy network (actor, twin critics, auto-tuned entropy, multi-player coordinator)
+**v1.0.0.** Every piece below is implemented *and* has real evidence
+behind it, not just simulation:
+
+- [x] Nash-SAC policy network — multi-seed validated (10 seeds), both light-load and severe-contention scenarios
 - [x] The routing game — obs/action/reward, simulated backend contention (`nashgate/env/`)
-- [x] `router/` — wires live requests to the trained policy, with online learning
-- [x] OpenAI-compatible proxy layer (`gateway/`)
+- [x] `router/` — wires live requests to the trained policy, online learning, rate limits hard-enforced
+- [x] OpenAI-compatible proxy layer (`gateway/`) — streaming + non-streaming, checked against a real backend on every push to main
 - [x] Benchmark harness vs. static routers (`nashgate/bench/`)
+- [x] Genuinely concurrent real traffic, verified against a real trained policy
+- [x] Latency-differentiated routing, verified against two genuinely different real providers
+
+Not yet done: `nashgate policy train`'s policies are stable and
+reproducible, not tuned — no LR schedule, no eval-during-training, no
+hyperparameter search. See [CONTRIBUTING.md#what's-open](CONTRIBUTING.md#whats-open).
 
 ## Layout
 
