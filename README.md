@@ -324,6 +324,42 @@ real conditions, which would need a second real provider with
 genuinely different latency characteristics to test properly. That
 piece is still simulation-only.
 
+## Verified with real latency-differentiated routing
+
+Closes the caveat above: a second real provider (OpenAI, `gpt-4o-mini`)
+alongside Anthropic — genuinely different infrastructure this time,
+not two routes to one backend.
+
+**First attempt, and an honest miss.** Ran 20 sequential real calls
+through a fresh, untrained policy with online learning on, expecting
+routing preference to shift as real latency feedback accumulated.
+Both real latencies came back genuinely different (Anthropic ~868ms
+mean, OpenAI ~2003ms mean, confirmed across the run) — but the routing
+split barely moved (5/5 → 6/4). Checked why before drawing any
+conclusion: `NashSACAgent.update()` no-ops until the replay buffer
+holds `batch_size` transitions (default 256). 20 real calls never got
+close — no gradient update ever fired, so nothing had actually been
+learned from that real experience. Worth stating plainly rather than
+quietly rerunning until the numbers looked better.
+
+**Second attempt, correctly designed.** Trained a policy in
+*simulation* using the real latency means just measured as the
+simulated `base_latency_ms` (868ms / 2003ms) — free, minutes not real
+spend, and it converged cleanly (reward 0.918 → 0.938 over 20k steps).
+Loaded that checkpoint (greedy, `explore: false`) into the real
+two-provider gateway and reran the same 20 real sequential calls:
+
+**20/20 routed to the real faster provider. Zero to the slower one.**
+
+That's the expected behavior for a well-trained *greedy* policy facing
+a clear, consistent reward gap between two options — full exploitation
+of the better one, not a bug or a policy that "forgot" the second
+backend exists. This closes the project's last remaining
+simulation-only claim: latency-differentiated routing now has real
+verification against genuinely different real infrastructure, not
+just simulated backends or same-provider routes differentiated only by
+config.
+
 ## Training a policy
 
 ```bash

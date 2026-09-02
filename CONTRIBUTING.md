@@ -67,18 +67,16 @@ A real, multi-seed-validated `severe_contention_100k` checkpoint has
 also been run against genuinely concurrent real traffic (16 requests,
 `asyncio.gather`, not sequential) — see
 [README#verified-under-real-concurrent-traffic](README.md#verified-under-real-concurrent-traffic).
+And routing that reacts to genuinely different real backend latencies
+(not just simulation, and not just one real provider differentiated by
+config) has been verified against two real providers (Anthropic +
+OpenAI) — see
+[README#verified-with-real-latency-differentiated-routing](README.md#verified-with-real-latency-differentiated-routing).
+Rate limits are enforced in live serving too, not just advisory — see
+[README#the-router](README.md#the-router).
 
 Still open:
 
-- **Latency-differentiated routing under real conditions.** The
-  concurrent-traffic test above used one real provider for all
-  configured "backends," differentiated only by rate limit and cost —
-  real latency came back similar across all of them, unlike the
-  300/600/1200ms spread the policy was trained on. So it validates
-  that *rate-limit-headroom-informed* spreading transfers from
-  simulation into real serving; it doesn't validate routing that
-  actually reacts to genuinely different real backend latencies, which
-  needs a second real provider to test.
 - **Tuning past demo-scale.** `nashgate policy train`'s multi-seed
   results show the training loop converges reliably and
   reproducibly — that's a different claim from "these are

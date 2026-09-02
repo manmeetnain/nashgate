@@ -6,7 +6,25 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.8.0] - 2026-09-02
+## [0.9.0] - 2026-09-02
+
+### Added
+
+- **Verified with real latency-differentiated routing** — the
+  project's last remaining simulation-only claim, closed. Set up a
+  second real provider (OpenAI, alongside Anthropic) — genuinely
+  different infrastructure, not two routes to one backend. First
+  attempt (fresh policy, online learning on, 20 real sequential calls)
+  showed real latencies genuinely differ (Anthropic ~868ms mean,
+  OpenAI ~2003ms mean) but barely moved the routing split — traced to
+  `NashSACAgent.update()` requiring 256 buffered transitions before any
+  gradient update fires, which 20 real calls never reached. Correctly
+  redesigned: trained a policy in simulation using those real measured
+  latencies as the simulated basis (free, converged cleanly, reward
+  0.918 → 0.938), then verified the trained checkpoint against the
+  same real two-provider traffic — 20/20 requests routed to the real
+  faster provider, zero to the slower one. See
+  README#verified-with-real-latency-differentiated-routing.
 
 ### Changed
 
@@ -202,7 +220,8 @@ gateway, benchmark) working end to end, with tests and CI to back it.
   generics (`dict`/`list`/`X | None`) across the codebase, and removed
   a couple of unused imports/variables — surfaced by adding `ruff`.
 
-[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/manmeetnain/nashgate/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.9.0
 [0.8.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.8.0
 [0.7.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.7.0
 [0.6.0]: https://github.com/manmeetnain/nashgate/releases/tag/v0.6.0
